@@ -1,0 +1,33 @@
+# Секреты — никогда не пушить
+credits.json
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE & Claude
+.idea/
+.vscode/
+.claude/
+*.swp
+*.swo
+
+# Junk folders
+{static/
+
+# Logs
+*.log

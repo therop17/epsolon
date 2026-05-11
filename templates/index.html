@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="/static/css/base.css">
+    <title>ESPOLÓN</title>
+    <style>
+        /* ── Nominations hub locked notice ── */
+        .nom-locked-notice { display: none; }
+        body.not-registered .nom-locked-notice { display: block; }
+        body.not-registered .nom-card { opacity: .45; pointer-events: none; cursor: not-allowed; }
+        /* ── Content cards as links ── */
+        a.content-card {
+            text-decoration: none;
+            display: block;
+            color: inherit;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ══════════════════════════════════════
+         CONSENT OVERLAY (first visit)
+    ══════════════════════════════════════ -->
+    <div id="consentOverlay" class="consent-overlay" style="display:none;">
+        <div class="consent-box" id="consentBox">
+
+            <!-- ── Step 1: Personal Data ── -->
+            <div id="consentStep1" class="consent-step">
+                <p class="consent-welcome">В этом боте ты сможешь:</p>
+                <ul class="consent-list">
+                    <li>✔️ зарегистрировать команду</li>
+                    <li>✔️ отправить все данные</li>
+                    <li>✔️ найти всю необходимую информацию</li>
+                </ul>
+                <p class="consent-welcome" style="margin-top:14px;">А ещё:</p>
+                <ul class="consent-list">
+                    <li>💪 прокачаться в знаниях</li>
+                    <li>🏺 найти вдохновение</li>
+                    <li>👀 быть в курсе этапов конкурса</li>
+                </ul>
+                <p class="consent-notice">И маааленькая формальность — чтобы приступить, прими <a href="https://docs.google.com/document/d/1Uq-bh9KVwo--h5WhcRD35mKgxZvai811/edit?rtpof=true&sd=true&tab=t.0" target="_blank" rel="noopener" class="consent-link">Соглашение об обработке персональных данных</a>.</p>
+                <div class="consent-btns">
+                    <button class="consent-btn-yes" onclick="consentAccept1()">Согласен(на)</button>
+                    <button class="consent-btn-no"  onclick="consentDecline()">Не согласен(на)</button>
+                </div>
+            </div>
+
+            <!-- ── Step 2: Push notifications ── -->
+            <div id="consentStep2" class="consent-step" style="display:none;">
+                <p class="consent-notice" style="margin-top:8px;">И ещё один момент — прими <a href="https://docs.google.com/document/d/10bqiX-dV8ryJZhloXfY4b1WDTVaeJcjK/edit?rtpof=true&sd=true&tab=t.0" target="_blank" rel="noopener" class="consent-link">Соглашение о получении пушей</a>.</p>
+                <div class="consent-btns">
+                    <button class="consent-btn-yes" onclick="consentAccept2()">Согласен(на)</button>
+                    <button class="consent-btn-no"  onclick="consentDecline()">Не согласен(на)</button>
+                </div>
+            </div>
+
+            <!-- ── Decline screen ── -->
+            <div id="consentDeclined" class="consent-step" style="display:none;">
+                <p class="consent-notice">Пользоваться ботом можно только после соглашения.</p>
+                <div class="consent-btns">
+                    <button class="consent-btn-yes" onclick="consentRetry()">Согласен(на)</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="logo">
+           <div class="logo-hero">
+                <img src="/static/img/logohead.png" alt="ESPOLÓN" class="logo-hero-img">
+            </div>
+        </div>
+    </div>
+
+    <div id="mainContent">
+
+        <!-- ══════════════════════════════════════
+             ГЛАВНАЯ
+        ══════════════════════════════════════ -->
+        <div class="page active" id="homePage">
+            <div class="profile-card">
+                <div class="profile-img" id="profileImg">
+                    <div class="profile-placeholder">👤</div>
+                </div>
+                <div class="profile-info">
+                    <h3 id="profileName">Загрузка...</h3>
+                    <div class="profile-username" id="profileUsername">@username</div>
+                </div>
+
+            </div>
+
+            <nav class="nav-buttons">
+                <button class="nav-btn" id="regNavBtn" onclick="handleRegNavBtn()">
+                    <div class="nav-icon" id="regNavIcon">💬</div>
+                    <div class="nav-label" id="regNavLabel">Регистрация Команды</div>
+                </button>
+                <button class="nav-btn" onclick="goToNominations()">
+                    <div class="nav-icon">📢</div>
+                    <div class="nav-label">Номинации</div>
+                </button>
+                <button class="nav-btn" onclick="showPage('rulesPage')">
+                    <div class="nav-icon">🗺️</div>
+                    <div class="nav-label">Правила и призы</div>
+                </button>
+                <button class="nav-btn" id="menuNavBtn" onclick="showPage('menuUploadPage')">
+                    <div class="nav-icon">🍽️</div>
+                    <div class="nav-label">Загрузить меню</div>
+                </button>
+            </nav>
+
+
+            <div class="titlenames"><h1>Полезная инфа</h1></div>
+            <div class="content-grid">
+    <a class="content-card" href="https://drive.google.com/file/d/1rS0rOynsEhSKI8moQFAUS286agoLONIZ/view?usp=sharing" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/tequila_wheel.jpg" alt="Гайд Колесо текилы"></div>
+        <div class="content-label"><div class="content-title">Гайд «Колесо текилы»</div></div>
+    </a>
+    <a class="content-card" href="https://t.me/addstickers/EspolonTequila" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/stickers.jpg" alt="Стикер пак"></div>
+        <div class="content-label"><div class="content-title">Стикер пак</div></div>
+    </a>
+    <a class="content-card" href="https://t.me/RadioPeruk/4238" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/what_is_tequila.jpg" alt="Что такое текила"></div>
+        <div class="content-label"><div class="content-title">Что такое текила?</div></div>
+    </a>
+    <a class="content-card" href="https://t.me/RadioPeruk/4247" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/blanco.jpg" alt="Текила Blanco" class="card-img-low"></div>
+        <div class="content-label"><div class="content-title">Текила Blanco</div></div>
+    </a>
+    <a class="content-card" href="https://t.me/RadioPeruk/4282" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/reposado.jpg" alt="Текила Reposado" class="card-img-low"></div>
+        <div class="content-label"><div class="content-title">Текила Reposado</div></div>
+    </a>
+    <a class="content-card" href="https://t.me/RadioPeruk/4285" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/reposado2.jpg" alt="Текила Anejo" class="card-img-low"></div>
+        <div class="content-label"><div class="content-title">Текила Añejo</div></div>
+    </a>
+    <a class="content-card" href="https://t.me/RadioPeruk/4292" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/cristalino.jpg" alt="Текила Cristalino" class="card-img-low"></div>
+        <div class="content-label"><div class="content-title">Текила Cristalino</div></div>
+    </a>
+    <a class="content-card" href="https://docs.google.com/spreadsheets/d/1UvvcKD0k99EcXoAeQFvULj8CKCoflq-LKJx_ZzcGuKo/edit" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/distributors.jpg" alt="Дистрибьюторы"></div>
+        <div class="content-label"><div class="content-title">Дистрибьюторы</div></div>
+    </a>
+    <a class="content-card" href="https://drive.google.com/file/d/1umztu2Qy0QSpint797ip8OowXa3esBkP/view" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/party_prep.jpg" alt="Как подготовить вечеринку"></div>
+        <div class="content-label"><div class="content-title">Как подготовить вечеринку</div></div>
+    </a>
+    <a class="content-card" href="https://t.me/hospitalityfaqtory/6137" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/tequila_history.jpg" alt="История текилы"></div>
+        <div class="content-label"><div class="content-title">История текилы</div></div>
+    </a>
+    <a class="content-card" href="https://t.me/hospitalityfaqtory/6261" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/tequila_books.jpg" alt="Книги про текилу"></div>
+        <div class="content-label"><div class="content-title">Книги про текилу</div></div>
+    </a>
+    <a class="content-card" href="#" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/tips_simonchuk.jpg" alt="Советы от Д. Симончука" class="card-img-person"></div>
+        <div class="content-label"><div class="content-title">Советы от Д. Симончука</div></div>
+    </a>
+    <a class="content-card" href="https://telegra.ph/Razrushaem-3-glavnyh-stereotipa-pro-tekilu-05-07" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/stereotypes.jpg" alt="Стереотипы про текилу"></div>
+        <div class="content-label"><div class="content-title">Стереотипы про текилу</div></div>
+    </a>
+    <a class="content-card" href="https://t.me/hospitalityfaqtory/6232" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/lifehacks1.jpg" alt="Лайфхаки 1"></div>
+        <div class="content-label"><div class="content-title">Лайфхаки для конкурса. Ч.1</div></div>
+    </a>
+    <a class="content-card" href="https://t.me/hospitalityfaqtory/6266" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/lifehacks2.jpg" alt="Лайфхаки 2"></div>
+        <div class="content-label"><div class="content-title">Лайфхаки для конкурса. Ч.2</div></div>
+    </a>
+    <a class="content-card" href="https://drive.google.com/file/d/1LSq3OooqEXwsEgmpPLTJEkUM-7UWWZV2/view" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/champion_tips.jpg" alt="Советы чемпионов"></div>
+        <div class="content-label"><div class="content-title">Советы чемпионов</div></div>
+    </a>
+    <a class="content-card" href="https://www.instagram.com/p/DPYt_wqjfkL/?utm_source=ig_web_copy_link&igsh=NTc4MTIwNjQ2YQ==" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/tips_shashin.jpg" alt="Советы от Е. Шашина" class="card-img-person"></div>
+        <div class="content-label"><div class="content-title">Советы от Е. Шашина</div></div>
+    </a>
+    <a class="content-card" href="https://hospitalityfaqtory.ru/pages/tpost/xastma6dg1-da-de-los-muertos-prazdnik-zhizni-pamyat" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/holiday_history.jpg" alt="История праздника"></div>
+        <div class="content-label"><div class="content-title">История праздника</div></div>
+    </a>
+    <a class="content-card" href="https://drive.google.com/file/d/1c4MsUQyqpudyPMMETPLrTMCRPkJR6-3L/view" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/garnish_ideas.jpg" alt="Идеи для гарнишей"></div>
+        <div class="content-label"><div class="content-title">Идеи для гарнишей</div></div>
+    </a>
+    <a class="content-card" href="https://t.me/RadioPeruk/4270" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/margarita1.jpg" alt="Сборник Маргарит 1" class="card-img-margarita"></div>
+        <div class="content-label"><div class="content-title">Сборник Маргарит. 1</div></div>
+    </a>
+    <a class="content-card" href="https://t.me/hospitalityfaqtory/6212" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/margarita4.jpg" alt="Сборник Маргарит 2" class="card-img-margarita"></div>
+        <div class="content-label"><div class="content-title">Сборник Маргарит. 2</div></div>
+    </a>
+    <a class="content-card" href="#" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/margarita5.jpg" alt="Сборник Маргарит 3" class="card-img-margarita"></div>
+        <div class="content-label"><div class="content-title">Сборник Маргарит. 3</div></div>
+    </a>
+    <a class="content-card" href="https://hospitalityfaqtory.ru/tpost/vopmzk7gn1-istoriya-kokteilya-margarita" target="_blank" rel="noopener">
+        <div class="card-bg card-photo"><img src="/static/img/margarita_history.jpg" alt="История Маргариты"></div>
+        <div class="content-label"><div class="content-title">История Маргариты</div></div>
+    </a>
+</div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             РЕГИСТРАЦИЯ КОМАНДЫ
+        ══════════════════════════════════════ -->
+        <div class="page" id="registrationPage">
+            <div class="reg-page-header">
+                <button class="reg-back-btn" onclick="showPage('homePage')">‹</button>
+                <span class="reg-page-title">Регистрация команды</span>
+            </div>
+
+            <div class="reg-body" id="regFormContent">
+                <div class="reg-step-bar">
+                    <div class="reg-step done"></div>
+                    <div class="reg-step done"></div>
+                    <div class="reg-step" id="regStep3"></div>
+                </div>
+
+                <div class="reg-heading">
+                    <h2>Регистрация<br>команды</h2>
+                    <p>Заполните данные вашего заведения</p>
+                </div>
+
+                <div class="reg-field-group">
+                    <label for="regCity">Город *</label>
+                    <input type="text" id="regCity" placeholder="Например: Москва" />
+                </div>
+                <div class="reg-field-group">
+                    <label for="regVenue">Заведение *</label>
+                    <input type="text" id="regVenue" placeholder="Название бара / ресторана" />
+                </div>
+
+                <div class="reg-section-sep">
+                    <div class="reg-sep-line"></div>
+                    <span class="reg-sep-label">Контакты</span>
+                    <div class="reg-sep-line"></div>
+                </div>
+
+                <div class="reg-field-group">
+                    <label for="regVenueLink">Ссылка на соцсеть заведения</label>
+                    <input type="url" id="regVenueLink" placeholder="https://..." />
+                </div>
+                <div class="reg-field-group">
+                    <label for="regCaptainLink">Ссылка на соцсеть капитана</label>
+                    <input type="url" id="regCaptainLink" placeholder="https://..." />
+                </div>
+
+                <div class="reg-section-sep">
+                    <div class="reg-sep-line"></div>
+                    <span class="reg-sep-label">Юридические данные</span>
+                    <div class="reg-sep-line"></div>
+                </div>
+
+                <div class="reg-field-row">
+                    <div class="reg-field-group">
+                        <label for="regArea">Площадь (м²)</label>
+                        <input type="number" id="regArea" placeholder="120" />
+                    </div>
+                    <div class="reg-field-group">
+                        <label for="regLicense">Номер лицензии</label>
+                        <input type="text" id="regLicense" placeholder="А-123456" />
+                    </div>
+                </div>
+                <div class="reg-field-group">
+                    <label for="regLegal">Юридическое лицо / ИП *</label>
+                    <input type="text" id="regLegal" placeholder="ООО «Название» / ИП Фамилия И.О." />
+                </div>
+
+                <div class="reg-section-sep">
+                    <div class="reg-sep-line"></div>
+                    <span class="reg-sep-label">Лицензия</span>
+                    <div class="reg-sep-line"></div>
+                </div>
+
+                <div class="reg-field-group">
+                    <label for="regLicenseLink">Ссылка на скан / фото лицензии</label>
+                    <input type="url" id="regLicenseLink" placeholder="https://drive.google.com/... или другая ссылка" />
+                </div>
+
+                <button class="reg-submit-btn" onclick="submitRegistration()">
+                    Отправить заявку →
+                </button>
+            </div>
+
+            <div class="reg-success" id="regSuccess">
+                <div class="reg-success-icon">🏆</div>
+                <h3>Заявка отправлена!</h3>
+                <p>Ваша команда зарегистрирована.<br>Мы свяжемся с вами в ближайшее время.</p>
+                <button class="action-btn primary" onclick="showPage('homePage')" style="margin-top: 28px; width: 100%;">
+                    На главную
+                </button>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             ХАБ НОМИНАЦИЙ
+        ══════════════════════════════════════ -->
+        <div class="page" id="nominationsHubPage">
+            <div class="reg-page-header">
+                <button class="reg-back-btn" onclick="showPage('homePage')">‹</button>
+                <span class="reg-page-title">Номинации</span>
+            </div>
+
+            <div class="nom-hub-list">
+                <!-- Locked notice -->
+                <div class="nom-locked-notice" id="nomLockedNotice" style="display:none; margin:20px 0 0;">
+                    <p>⚠️ <strong>Сначала зарегистрируйте команду</strong>, чтобы участвовать в номинациях.</p>
+                </div>
+
+                <div class="nom-hub-heading">
+                    <h2>Основные<br>номинации</h2>
+                    <p>15 июня — 23 августа · <strong>Ввести данные можно будет с 24.08 по 31.08</strong></p>
+                </div>
+
+                <div class="nom-card" id="nomCard-spirit" onclick="openNomDetail('spirit')">
+                    <div class="nom-card-icon"><img src="/static/img/nom-icon-spirit.jpg" alt="Дух бунтарей"></div>
+                    <div class="nom-card-body">
+                        <div class="nom-card-title">Дух бунтарей</div>
+                        <div class="nom-card-dates">15.06 — 23.08</div>
+                        <div class="nom-card-desc">Побеждает команда, которая покажет максимальный пролив текилы на 1 м² заведения за весь период фестиваля.</div>
+                        <span class="nom-card-prize">350 000 ₽</span>
+                    </div>
+                    <div class="nom-card-badge" id="nomBadge-spirit">›</div>
+                </div>
+
+                <div class="nom-card" id="nomCard-stereo" onclick="openNomDetail('stereo')">
+                    <div class="nom-card-icon"><img src="/static/img/nom-icon-stereo.jpg" alt="Вызов стереотипам" class="icon-stereo"></div>
+                    <div class="nom-card-body">
+                        <div class="nom-card-title">Вызов стереотипам</div>
+                        <div class="nom-card-dates">15.06 — 23.08</div>
+                        <div class="nom-card-desc">Сними видео, которое разрушает стереотип «соль+лайм» и показывает правильный ритуал потребления текилы из 100% голубой агавы.</div>
+                        <span class="nom-card-prize">110 000 ₽</span>
+                    </div>
+                    <div class="nom-card-badge" id="nomBadge-stereo">›</div>
+                </div>
+
+                <!-- Дополнительные номинации -->
+                <div class="nom-hub-heading" style="margin-top: 28px;">
+                    <h2>Дополнительные<br>номинации</h2>
+                    <p>Выберите номинацию для участия</p>
+                </div>
+
+                <div class="nom-card" id="nomCard-tiresome" onclick="openNomDetail('tiresome')">
+                    <div class="nom-card-icon"><img src="/static/img/nom-icon-tiresome.jpg" alt="Нарушители тишины"></div>
+                    <div class="nom-card-body">
+                        <div class="nom-card-title">Нарушители тишины</div>
+                        <div class="nom-card-dates">15.06 — 08.07</div>
+                        <div class="nom-card-desc">За самую бунтарскую вечеринку в духе Espolón.</div>
+                        <span class="nom-card-prize">80 000 ₽</span>
+                    </div>
+                    <div class="nom-card-badge" id="nomBadge-tiresome">›</div>
+                </div>
+
+                <div class="nom-card" id="nomCard-cristalino" onclick="openNomDetail('cristalino')">
+                    <div class="nom-card-icon"><img src="/static/img/nom-icon-cristalino.jpg" alt="Драйверы Cristalino"></div>
+                    <div class="nom-card-body">
+                        <div class="nom-card-title">Драйверы Cristalino</div>
+                        <div class="nom-card-dates">09.07 — 31.07</div>
+                        <div class="nom-card-desc">За самое большое количество Espolón Cristalino за период.</div>
+                        <span class="nom-card-prize">80 000 ₽</span>
+                    </div>
+                    <div class="nom-card-badge" id="nomBadge-cristalino">›</div>
+                </div>
+
+                <div class="nom-card" id="nomCard-enlighten" onclick="openNomDetail('enlighten')">
+                    <div class="nom-card-icon"><img src="/static/img/nom-icon-enlighten.jpg" alt="Дерзкий просветитель" class="icon-enlighten"></div>
+                    <div class="nom-card-body">
+                        <div class="nom-card-title">Дерзкий просветитель</div>
+                        <div class="nom-card-dates">01.08 — 23.08</div>
+                        <div class="nom-card-desc">За самый виральный образовательный контент о текиле из 100% голубой агавы.</div>
+                        <span class="nom-card-prize">80 000 ₽</span>
+                    </div>
+                    <div class="nom-card-badge" id="nomBadge-enlighten">›</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             НАРУШИТЕЛИ ТИШИНЫ
+        ══════════════════════════════════════ -->
+        <div class="page nom-detail-page" id="nomDetailPage-tiresome">
+            <div class="reg-page-header">
+                <button class="reg-back-btn" onclick="showPage('nominationsHubPage')">‹</button>
+                <span class="reg-page-title">Нарушители тишины</span>
+            </div>
+
+            <div id="nomConfirm-tiresome" class="nom-confirm-screen">
+                <div class="reg-heading">
+                    <h2>Нарушители<br>тишины</h2>
+                    <p>15.06 — 08.07 · Приз: 80 000 ₽ + вечеринка</p>
+                </div>
+                <p class="nom-confirm-desc">Победа присуждается за самую бунтарскую вечеринку в духе Espolón, проведённую в период <strong>15.06 – 08.07</strong>. Жюри оценивает атмосферу, декор, коктейльное меню и вовлечённость гостей.</p>
+                <div class="nom-confirm-prize-box">
+                    <p><strong>80 000 ₽ + организация вечеринки</strong><br>Победителей объявим до 16.07.</p>
+                </div>
+                <a href="#" onclick="showPage('nomInfoPage-tiresome');return false;" class="nom-details-link">Подробнее о номинации →</a>
+                <p style="font-size:.85rem;color:var(--ink-mid);margin-bottom:20px;">Будете участвовать в номинации?</p>
+                <div class="nom-yn-row">
+                    <button class="action-btn primary" onclick="enrollNom('tiresome')">Да, участвую</button>
+                    <button class="action-btn" onclick="showPage('nominationsHubPage')">Нет</button>
+                </div>
+            </div>
+
+            <!-- Enrolled screen -->
+            <div id="nomEnrolled-tiresome" class="nom-enrolled-screen">
+                <div class="nom-enrolled-icon"><img src="/static/img/nom-icon-tiresome.jpg" alt=""></div>
+                <div class="nom-enrolled-title">Ты в игре!</div>
+                <p class="nom-enrolled-msg">Организуй бунтарскую вечеринку в своём заведении в духе Espolón. Главное — атмосфера, декор, коктейли и вовлечённость гостей.</p>
+                <div class="nom-enrolled-period">
+                    <p>🎸 Дата вечеринки: <strong>15.06 – 08.07</strong></p>
+                    <p>📋 Сдать отчёт (фото, видео, муд-борд): <strong>09.07 – 16.07</strong></p>
+                    <p>🏆 Победитель будет объявлен до <strong>16.07</strong></p>
+                </div>
+                <button class="action-btn primary fill-data-btn" id="fillDataBtn-tiresome" onclick="showNomFormFill('tiresome')" style="width:100%;margin-bottom:12px;">
+                    Заполнить данные →
+                </button>
+                <button class="action-btn" onclick="showPage('nominationsHubPage')" style="width:100%;">К номинациям</button>
+            </div>
+
+            <div id="nomForm-tiresome" class="nom-form-screen" style="display:none;">
+                <div class="reg-step-bar"><div class="reg-step done"></div><div class="reg-step done"></div><div class="reg-step" id="nomStep3-tiresome"></div></div>
+                <div class="reg-heading">
+                    <h2>Данные<br>вечеринки</h2>
+                    <p>Внести данные можно только в период 09.07–16.07</p>
+                </div>
+                <div class="reg-field-group">
+                    <label for="tiresome-photo">Ссылка на фото-отчёт *</label>
+                    <input type="url" id="tiresome-photo" placeholder="https://..." />
+                </div>
+                <div class="reg-field-group">
+                    <label for="tiresome-video">Ссылка на видео-отчёт *</label>
+                    <input type="url" id="tiresome-video" placeholder="https://..." />
+                </div>
+                <div class="reg-field-group">
+                    <label for="tiresome-moodboard">Ссылка на муд-борд</label>
+                    <input type="url" id="tiresome-moodboard" placeholder="https://..." />
+                </div>
+                <div class="nom-form-actions">
+                    <button class="action-btn" onclick="showNomEnrolled('tiresome')">‹ Назад</button>
+                    <button class="reg-submit-btn nom-submit" onclick="submitNomDetail('tiresome')">Отправить →</button>
+                </div>
+            </div>
+
+            <div id="nomSuccess-tiresome" class="nom-result-screen">
+                <div class="nom-result-icon"><img src="/static/img/nom-icon-tiresome.png" alt="" style="width:80px;height:80px;object-fit:contain;"></div>
+                <h3>Данные отправлены!</h3>
+                <p>Победителей в номинации «Нарушители тишины» мы объявим до 16.07.</p>
+                <button class="action-btn primary" onclick="showPage('nominationsHubPage')" style="margin-top:28px;">К номинациям</button>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             ДРАЙВЕРЫ CRISTALINO
+        ══════════════════════════════════════ -->
+        <div class="page nom-detail-page" id="nomDetailPage-cristalino">
+            <div class="reg-page-header">
+                <button class="reg-back-btn" onclick="showPage('nominationsHubPage')">‹</button>
+                <span class="reg-page-title">Драйверы Cristalino</span>
+            </div>
+
+            <div id="nomConfirm-cristalino" class="nom-confirm-screen">
+                <div class="reg-heading">
+                    <h2>Драйверы<br>Cristalino</h2>
+                    <p>09.07 — 31.07 · Приз: 80 000 ₽</p>
+                </div>
+                <p class="nom-confirm-desc">Победа присуждается за самое большое количество проданных бутылок Espolón Cristalino за период <strong>09.07 – 31.07</strong>.</p>
+                <div class="nom-confirm-prize-box">
+                    <p><strong>Приз: 80 000 ₽</strong><br>Победителей объявим до 08.08.</p>
+                </div>
+                <a href="#" onclick="showPage('nomInfoPage-cristalino');return false;" class="nom-details-link">Подробнее о номинации →</a>
+                <p style="font-size:.85rem;color:var(--ink-mid);margin-bottom:20px;">Будете участвовать в номинации?</p>
+                <div class="nom-yn-row">
+                    <button class="action-btn primary" onclick="enrollNom('cristalino')">Да, участвую</button>
+                    <button class="action-btn" onclick="showPage('nominationsHubPage')">Нет</button>
+                </div>
+            </div>
+
+            <!-- Enrolled screen -->
+            <div id="nomEnrolled-cristalino" class="nom-enrolled-screen">
+                <div class="nom-enrolled-icon"><img src="/static/img/nom-icon-cristalino.jpg" alt=""></div>
+                <div class="nom-enrolled-title">Ты в игре!</div>
+                <p class="nom-enrolled-msg">Продавай Espolón Cristalino гостям с 9 июля по 31 июля. Данные по литрам нужно будет внести в начале августа.</p>
+                <div class="nom-enrolled-period">
+                    <p>💎 Период продаж: <strong>09.07 – 31.07</strong></p>
+                    <p>📋 Внести данные по литрам: <strong>01.08 – 08.08</strong></p>
+                    <p>🏆 Победитель будет объявлен до <strong>08.08</strong></p>
+                </div>
+                <button class="action-btn primary fill-data-btn" id="fillDataBtn-cristalino" onclick="showNomFormFill('cristalino')" style="width:100%;margin-bottom:12px;">
+                    Заполнить данные →
+                </button>
+                <button class="action-btn" onclick="showPage('nominationsHubPage')" style="width:100%;">К номинациям</button>
+            </div>
+
+            <div id="nomForm-cristalino" class="nom-form-screen" style="display:none;">
+                <div class="reg-step-bar"><div class="reg-step done"></div><div class="reg-step done"></div><div class="reg-step" id="nomStep3-cristalino"></div></div>
+                <div class="reg-heading">
+                    <h2>Объём<br>Cristalino</h2>
+                    <p>Внесите литры Espolón Cristalino за период 09.07–31.07</p>
+                </div>
+                <div class="reg-field-group">
+                    <label for="cristalino-vol">Espolón Cristalino (л) *</label>
+                    <input type="number" id="cristalino-vol" placeholder="0" min="0" step="0.1" />
+                </div>
+                <div class="nom-form-actions">
+                    <button class="action-btn" onclick="showNomEnrolled('cristalino')">‹ Назад</button>
+                    <button class="reg-submit-btn nom-submit" onclick="submitNomDetail('cristalino')">Отправить →</button>
+                </div>
+            </div>
+
+            <div id="nomSuccess-cristalino" class="nom-result-screen">
+                <div class="nom-result-icon"><img src="/static/img/nom-icon-cristalino.png" alt="" style="width:80px;height:80px;object-fit:contain;"></div>
+                <h3>Данные отправлены!</h3>
+                <p>Победителей в номинации «Драйверы Cristalino» мы объявим до 08.08.</p>
+                <button class="action-btn primary" onclick="showPage('nominationsHubPage')" style="margin-top:28px;">К номинациям</button>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             ДЕРЗКИЙ ПРОСВЕТИТЕЛЬ
+        ══════════════════════════════════════ -->
+        <div class="page nom-detail-page" id="nomDetailPage-enlighten">
+            <div class="reg-page-header">
+                <button class="reg-back-btn" onclick="showPage('nominationsHubPage')">‹</button>
+                <span class="reg-page-title">Дерзкий просветитель</span>
+            </div>
+
+            <div id="nomConfirm-enlighten" class="nom-confirm-screen">
+                <div class="reg-heading">
+                    <h2>Дерзкий<br>просветитель</h2>
+                    <p>01.08 — 23.08 · Приз: 80 000 ₽</p>
+                </div>
+                <p class="nom-confirm-desc">Победа присуждается за самый виральный образовательный контент о текиле из 100% голубой агавы, опубликованный за период <strong>01.08 – 23.08</strong>.</p>
+                <div class="nom-confirm-prize-box">
+                    <p><strong>Приз: 80 000 ₽</strong><br>Данные вносить с 24.08 по 30.08. Победителей объявим до 31.08.</p>
+                </div>
+                <a href="#" onclick="showPage('nomInfoPage-enlighten');return false;" class="nom-details-link">Подробнее о номинации →</a>
+                <p style="font-size:.85rem;color:var(--ink-mid);margin-bottom:20px;">Будете участвовать в номинации?</p>
+                <div class="nom-yn-row">
+                    <button class="action-btn primary" onclick="enrollNom('enlighten')">Да, участвую</button>
+                    <button class="action-btn" onclick="showPage('nominationsHubPage')">Нет</button>
+                </div>
+            </div>
+
+            <!-- Enrolled screen -->
+            <div id="nomEnrolled-enlighten" class="nom-enrolled-screen">
+                <div class="nom-enrolled-icon"><img src="/static/img/nom-icon-enlighten.jpg" alt=""></div>
+                <div class="nom-enrolled-title">Ты в игре!</div>
+                <p class="nom-enrolled-msg">Создавай и публикуй образовательный контент о текиле из 100% голубой агавы с 1 по 23 августа. Оценивается виральность, полезность и вовлечённость аудитории.</p>
+                <div class="nom-enrolled-period">
+                    <p>🎬 Период публикаций: <strong>01.08 – 23.08</strong></p>
+                    <p>📋 Отправить ссылки на контент: <strong>24.08 – 30.08</strong></p>
+                    <p>🏆 Победитель будет объявлен до <strong>31.08</strong></p>
+                </div>
+                <button class="action-btn primary fill-data-btn" id="fillDataBtn-enlighten" onclick="showNomFormFill('enlighten')" style="width:100%;margin-bottom:12px;">
+                    Заполнить данные →
+                </button>
+                <button class="action-btn" onclick="showPage('nominationsHubPage')" style="width:100%;">К номинациям</button>
+            </div>
+
+            <div id="nomForm-enlighten" class="nom-form-screen" style="display:none;">
+                <div class="reg-step-bar"><div class="reg-step done"></div><div class="reg-step done"></div><div class="reg-step" id="nomStep3-enlighten"></div></div>
+                <div class="reg-heading">
+                    <h2>Контент<br>для номинации</h2>
+                    <p>Внести данные можно только в период 24.08–30.08</p>
+                </div>
+                <div class="reg-field-group">
+                    <label for="enlighten-link1">Ссылка 1 — основная публикация *</label>
+                    <input type="url" id="enlighten-link1" placeholder="https://..." />
+                </div>
+                <div class="reg-field-group">
+                    <label for="enlighten-link2">Ссылка 2 — дополнительно *</label>
+                    <input type="url" id="enlighten-link2" placeholder="https://..." />
+                </div>
+                <div class="reg-field-group">
+                    <label for="enlighten-link3">Ссылка 3 — дополнительно *</label>
+                    <input type="url" id="enlighten-link3" placeholder="https://..." />
+                </div>
+                <!-- Dynamic extra links container -->
+                <div id="enlighten-extra-links"></div>
+                <button type="button" class="add-link-btn" onclick="addEnlightenLink()">+ Добавить ссылку</button>
+                <div class="nom-form-actions">
+                    <button class="action-btn" onclick="showNomEnrolled('enlighten')">‹ Назад</button>
+                    <button class="reg-submit-btn nom-submit" onclick="submitNomDetail('enlighten')">Отправить →</button>
+                </div>
+            </div>
+
+            <div id="nomSuccess-enlighten" class="nom-result-screen">
+                <div class="nom-result-icon"><img src="/static/img/nom-icon-enlighten.png" alt="" style="width:80px;height:80px;object-fit:contain;"></div>
+                <h3>Данные отправлены!</h3>
+                <p>Победителей в номинации «Дерзкий просветитель» объявим до 31.08.</p>
+                <button class="action-btn primary" onclick="showPage('nominationsHubPage')" style="margin-top:28px;">К номинациям</button>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             ДУХ БУНТАРЕЙ (основная)
+        ══════════════════════════════════════ -->
+        <div class="page nom-detail-page" id="nomDetailPage-spirit">
+            <div class="reg-page-header">
+                <button class="reg-back-btn" onclick="showPage('nominationsHubPage')">‹</button>
+                <span class="reg-page-title">Дух бунтарей</span>
+            </div>
+
+            <div id="nomConfirm-spirit" class="nom-confirm-screen">
+                <div class="reg-heading">
+                    <h2>Дух<br>бунтарей</h2>
+                    <p>15.06 — 23.08 · Данные с 24.08 по 31.08</p>
+                </div>
+                <!-- Prizes layout: main + secondary -->
+                <div class="spirit-prizes-row">
+                    <div class="spirit-prize-main">
+                        <div class="prize-place">1 место</div>
+                        <div class="prize-sum">350 000 ₽</div>
+                    </div>
+                    <div class="spirit-prizes-secondary">
+                        <div class="spirit-prize-alt">
+                            <div class="prize-place">2 место</div>
+                            <div class="prize-sum">175 000 ₽</div>
+                        </div>
+                        <div class="spirit-prize-alt">
+                            <div class="prize-place">3 место</div>
+                            <div class="prize-sum">125 000 ₽</div>
+                        </div>
+                    </div>
+                </div>
+                <p class="nom-confirm-desc">Побеждает команда с максимальным проливом текилы на 1 м² заведения за весь период фестиваля. Победителя определяем по формуле с коэффициентами.</p>
+                <div class="nom-confirm-prize-box">
+                    <p>Что нужно подготовить:<br><strong>Cristalino (л) · Añejo (л) · Reposado (л) · Blanco (л) · Коктейли (шт)</strong><br>+ ссылки на пост и видео «Вызов стереотипам» (доп. баллы)</p>
+                </div>
+                <a href="#" onclick="showPage('nomInfoPage-spirit');return false;" class="nom-details-link">Подробнее о номинации →</a>
+                <!-- Date-gated fill button -->
+                <button class="action-btn primary fill-data-btn" id="fillDataBtn-spirit" onclick="showNomForm('spirit')" style="width:100%;margin-top:16px;">
+                    Заполнить данные →
+                </button>
+            </div>
+
+            <div id="nomForm-spirit" class="nom-form-screen" style="display:none;">
+                <div class="reg-step-bar"><div class="reg-step done"></div><div class="reg-step done"></div><div class="reg-step" id="nomStep3-spirit"></div></div>
+                <div class="reg-heading">
+                    <h2>Данные<br>по продажам</h2>
+                    <p>Заполните объёмы за весь период конкурса</p>
+                </div>
+                <div class="reg-field-group">
+                    <label for="spirit-cristalino">Espolón Cristalino (л)</label>
+                    <input type="number" id="spirit-cristalino" placeholder="0" min="0" step="0.1" />
+                </div>
+                <div class="reg-field-group">
+                    <label for="spirit-anejo">Espolón Anejo (л)</label>
+                    <input type="number" id="spirit-anejo" placeholder="0" min="0" step="0.1" />
+                </div>
+                <div class="reg-field-group">
+                    <label for="spirit-reposado">Espolón Reposado (л)</label>
+                    <input type="number" id="spirit-reposado" placeholder="0" min="0" step="0.1" />
+                </div>
+                <div class="reg-field-group">
+                    <label for="spirit-blanco">Espolón Blanco (л)</label>
+                    <input type="number" id="spirit-blanco" placeholder="0" min="0" step="0.1" />
+                </div>
+                <div class="reg-field-group">
+                    <label for="spirit-cocktails">Коктейли на основе Espolón (шт)</label>
+                    <input type="number" id="spirit-cocktails" placeholder="0" min="0" step="1" />
+                </div>
+                <div class="reg-section-sep"><div class="reg-sep-line"></div><span class="reg-sep-label">Доп. материалы</span><div class="reg-sep-line"></div></div>
+                <div class="reg-field-group">
+                    <label for="spirit-post">Ссылка на пост (если делали)</label>
+                    <input type="url" id="spirit-post" placeholder="https://..." />
+                </div>
+                <div class="reg-field-group">
+                    <label for="spirit-video">Ссылка на видео (если делали)</label>
+                    <input type="url" id="spirit-video" placeholder="https://..." />
+                </div>
+                <div class="nom-form-actions">
+                    <button class="action-btn" onclick="showNomConfirm('spirit')">‹ Назад</button>
+                    <button class="reg-submit-btn nom-submit" onclick="submitNomDetail('spirit')">Отправить →</button>
+                </div>
+            </div>
+
+            <div id="nomSuccess-spirit" class="nom-result-screen">
+                <div class="nom-result-icon">🔥</div>
+                <h3>Данные отправлены!</h3>
+                <p>Ваши данные по номинации «Дух бунтарей» получены. Удачи!</p>
+                <button class="action-btn primary" onclick="showPage('nominationsHubPage')" style="margin-top:28px;">К номинациям</button>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             ВЫЗОВ СТЕРЕОТИПАМ (основная)
+        ══════════════════════════════════════ -->
+        <div class="page nom-detail-page" id="nomDetailPage-stereo">
+            <div class="reg-page-header">
+                <button class="reg-back-btn" onclick="showPage('nominationsHubPage')">‹</button>
+                <span class="reg-page-title">Вызов стереотипам</span>
+            </div>
+
+            <div id="nomConfirm-stereo" class="nom-confirm-screen">
+                <div class="reg-heading">
+                    <h2>Вызов<br>стереотипам</h2>
+                    <p>15.06 — 23.08 · Приз: 110 000 ₽</p>
+                </div>
+                <p class="nom-confirm-desc">Сними видео, которое разрушает стереотип «соль+лайм» и показывает правильный ритуал потребления текилы из 100% голубой агавы.</p>
+                <div class="nom-confirm-prize-box">
+                    <p>Что нужно подготовить:<br>
+                    <strong>Ссылка на видео</strong></p>
+                    <p style="margin-top:10px;">💡 Ссылку на видео «Вызов стереотипам» вы сможете внести при заполнении данных номинации <strong>«Дух бунтарей»</strong> (с 24.08 по 31.08).</p>
+                </div>
+                <a href="#" onclick="showPage('nomInfoPage-stereo');return false;" class="nom-details-link">Подробнее о номинации →</a>
+            </div>
+
+            <div id="nomForm-stereo" class="nom-form-screen" style="display:none;">
+                <div class="reg-step-bar"><div class="reg-step done"></div><div class="reg-step done"></div><div class="reg-step" id="nomStep3-stereo"></div></div>
+                <div class="reg-heading">
+                    <h2>Данные<br>номинации</h2>
+                    <p>Заполните данные для участия</p>
+                </div>
+                <div class="reg-field-group">
+                    <label for="stereo-post">Ссылка на пост *</label>
+                    <input type="url" id="stereo-post" placeholder="https://..." />
+                </div>
+                <div class="reg-field-group">
+                    <label for="stereo-video">Ссылка на видео *</label>
+                    <input type="url" id="stereo-video" placeholder="https://..." />
+                </div>
+                <div class="reg-section-sep"><div class="reg-sep-line"></div><span class="reg-sep-label">Объёмы продаж</span><div class="reg-sep-line"></div></div>
+                <div class="reg-field-group">
+                    <label for="stereo-cristalino">Espolón Cristalino (л)</label>
+                    <input type="number" id="stereo-cristalino" placeholder="0" min="0" step="0.1" />
+                </div>
+                <div class="reg-field-group">
+                    <label for="stereo-anejo">Espolón Anejo (л)</label>
+                    <input type="number" id="stereo-anejo" placeholder="0" min="0" step="0.1" />
+                </div>
+                <div class="reg-field-group">
+                    <label for="stereo-reposado">Espolón Reposado (л)</label>
+                    <input type="number" id="stereo-reposado" placeholder="0" min="0" step="0.1" />
+                </div>
+                <div class="reg-field-group">
+                    <label for="stereo-blanco">Espolón Blanco (л)</label>
+                    <input type="number" id="stereo-blanco" placeholder="0" min="0" step="0.1" />
+                </div>
+                <div class="reg-field-group">
+                    <label for="stereo-cocktails">Коктейли на основе Espolón (шт)</label>
+                    <input type="number" id="stereo-cocktails" placeholder="0" min="0" step="1" />
+                </div>
+                <div class="nom-form-actions">
+                    <button class="action-btn" onclick="showNomConfirm('stereo')">‹ Назад</button>
+                    <button class="reg-submit-btn nom-submit" onclick="submitNomDetail('stereo')">Отправить →</button>
+                </div>
+            </div>
+
+            <div id="nomSuccess-stereo" class="nom-result-screen">
+                <div class="nom-result-icon">🏆</div>
+                <h3>Данные отправлены!</h3>
+                <p>Ваши данные по номинации «Вызов стереотипам» получены. Удачи!</p>
+                <button class="action-btn primary" onclick="showPage('nominationsHubPage')" style="margin-top:28px;">К номинациям</button>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             ПРАВИЛА И ПРИЗЫ
+        ══════════════════════════════════════ -->
+        <div class="page" id="rulesPage">
+    <div class="reg-page-header">
+        <button class="reg-back-btn" onclick="showPage('homePage')">‹</button>
+        <span class="reg-page-title">Правила и призы</span>
+    </div>
+    <div class="rules-page-body">
+
+        <a href="https://docs.google.com/document/d/18t0AnbWChTy1Mwh4NPa3u87X0jFj-sI8/edit" target="_blank" rel="noopener" class="rules-read-btn">
+            Читать правила →
+        </a>
+
+        <div class="rules-section">
+            <h3>О конкурсе</h3>
+            <p>Dia Muertos Competition 26: Летний фестиваль текилы — это фестиваль для барных команд заведений. Смысл не только в количестве литров — это про культуру потребления текилы из 100% голубой агавы, про отказ от стереотипа «соль + лайм» и про то, чтобы показать гостям настоящий вкус текилы.</p>
+            <p>Хэштеги: <strong>#DiaMuertosCompetition26 &nbsp;#ЛетнийФестивальТекилы</strong></p>
+        </div>
+
+        <div class="rules-section">
+            <h3>Призовой фонд</h3>
+
+            <div class="rules-prize-card">
+                <h4><img src="/static/img/nom-icon-spirit.png" alt="" class="rules-prize-icon"> Дух бунтарей</h4>
+                <div class="prize-amount">350 000 ₽</div>
+                <p>1 место — 350 000 ₽ · 2 место — 175 000 ₽ · 3 место — 125 000 ₽</p>
+                <p style="margin-top:6px;font-size:.85rem;">Максимальный пролив текилы на 1 м² заведения. 15.06–23.08</p>
+            </div>
+            <div class="rules-prize-card">
+                <h4><img src="/static/img/nom-icon-stereo.png" alt="" class="rules-prize-icon" style="height:40px;width:auto;"> Вызов стереотипам</h4>
+                <div class="prize-amount">110 000 ₽</div>
+                <p>Лучшее видео, разрушающее стереотип «соль+лайм». 15.06–23.08</p>
+            </div>
+            <div class="rules-prize-card" style="border-color: var(--orange, #FF8C42);">
+                <h4><img src="/static/img/nom-icon-tiresome.png" alt="" class="rules-prize-icon"> Нарушители тишины</h4>
+                <div class="prize-amount" style="color: var(--hot);">80 000 ₽ + вечеринка</div>
+                <p>За самую бунтарскую вечеринку в духе Espolón. 15.06–08.07</p>
+            </div>
+            <div class="rules-prize-card" style="border-color: var(--orange, #FF8C42);">
+                <h4><img src="/static/img/nom-icon-cristalino.png" alt="" class="rules-prize-icon"> Драйверы Cristalino</h4>
+                <div class="prize-amount" style="color: var(--hot);">80 000 ₽</div>
+                <p>Максимальный пролив Espolón Cristalino за период. 09.07–31.07</p>
+            </div>
+            <div class="rules-prize-card" style="border-color: var(--orange, #FF8C42);">
+                <h4><img src="/static/img/nom-icon-enlighten.png" alt="" class="rules-prize-icon"> Дерзкий просветитель</h4>
+                <div class="prize-amount" style="color: var(--hot);">80 000 ₽</div>
+                <p>Самый виральный образовательный контент о текиле. 01.08–23.08</p>
+            </div>
+        </div>
+
+        <div class="rules-section">
+            <h3>Как участвовать</h3>
+            <ul class="rules-list">
+                <li>Зарегистрируйте команду с 11.05 по 14.06</li>
+                <li>Создайте подачу текилы в чистом виде: с сезонным фруктом или ягодой для Blanco / Reposado / Añejo и с ритуалом для Cristalino</li>
+                <li>Распечатайте фестивальное меню, сфотографируйте его и отправьте фото в бот до 14.06</li>
+                <li>С 15.06 по 23.08 предлагайте гостям текилу в чистом виде с сезонным фруктом или ягодой в течение всего фестиваля</li>
+                <li>Опубликуйте пост об участии и видео с подачей для получения дополнительных баллов</li>
+                <li>Участвуйте в дополнительных номинациях</li>
+            </ul>
+        </div>
+
+        <div class="rules-section">
+            <h3>Важные даты</h3>
+            <ul class="rules-list">
+                <li><strong>11 мая — 14 июня</strong> — Регистрация команд в ТГ-боте + загрузка фото меню</li>
+                <li><strong>15 июня — 23 августа</strong> — Период основных номинаций: Дух бунтарей (литры) и Вызов стереотипам (видео)</li>
+                <li><strong>15 июня — 8 июля</strong> — Номинация «Нарушители тишины»: организуй и проведи вечеринку</li>
+                <li><strong>30 июня — 1 июля</strong> — Сдай промежуточный результат по литрам текилы в бот</li>
+                <li><strong>9 июля — 16 июля</strong> — «Нарушители тишины»: сдай отчёт о вечеринке в бот</li>
+                <li><strong>9 июля — 31 июля</strong> — Номинация «Драйверы Cristalino»: максимальный пролив Cristalino</li>
+                <li><strong>1 августа — 8 августа</strong> — «Драйверы Cristalino»: сдай данные по Cristalino в бот</li>
+                <li><strong>1 августа — 23 августа</strong> — Номинация «Дерзкий просветитель»: публикуй образовательный контент</li>
+                <li><strong>24 августа — 30 августа</strong> — «Дерзкий просветитель»: сдай ссылки на контент в бот</li>
+                <li><strong>24 августа — 31 августа</strong> — Вносишь финальные данные по основным номинациям в бот</li>
+            </ul>
+        </div>
+
+    </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             ЗАГРУЗИТЬ МЕНЮ
+        ══════════════════════════════════════ -->
+        <div class="page" id="menuUploadPage">
+            <div class="reg-page-header">
+                <button class="reg-back-btn" onclick="showPage('homePage')">‹</button>
+                <span class="reg-page-title">Загрузить меню</span>
+            </div>
+            <div class="menu-upload-body">
+
+                <!-- Успешная загрузка -->
+                <div id="menuUploadSuccess" style="display:none; margin-bottom:24px;">
+                    <div class="menu-success-banner">
+                        <div class="menu-success-icon">✅</div>
+                        <div class="menu-success-title">Вы участник!</div>
+                        <div class="menu-success-msg">Данные заполнены и меню загружено.</div>
+                    </div>
+                </div>
+
+                <!-- Форма загрузки -->
+                <div id="menuInputGroup">
+                    <div class="menu-upload-heading">
+                        <h2>Фото<br>меню</h2>
+                        <p>Сфотографируйте фестивальное меню и загрузите его здесь до 14.06</p>
+                    </div>
+                    <div class="reg-field-group">
+                        <label for="menuPhotoLink">Ссылка на фото меню *</label>
+                        <input type="url" id="menuPhotoLink" placeholder="https://drive.google.com/... или другая ссылка" />
+                        <div style="font-size:.75rem;color:var(--ink-light);margin-top:6px;line-height:1.4;">
+                            Загрузите фото в Google Drive или Яндекс Диск и вставьте ссылку
+                        </div>
+                    </div>
+                    <button class="reg-submit-btn" id="menuSubmitBtn" onclick="submitMenuPhoto()">
+                        Отправить меню →
+                    </button>
+                    <p style="font-size:.78rem;color:var(--ink-light);margin-top:16px;line-height:1.5;">
+                        Загрузить меню нужно до <strong>14 июня</strong>. После отправки менеджер проверит фото и подтвердит участие.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+        <!-- ══════════════════════════════════════
+             ИНФО: ДУХ БУНТАРЕЙ
+        ══════════════════════════════════════ -->
+        <div class="page" id="nomInfoPage-spirit">
+            <div class="reg-page-header">
+                <button class="reg-back-btn" onclick="showPage('nomDetailPage-spirit')">‹</button>
+                <span class="reg-page-title">Дух бунтарей</span>
+            </div>
+            <div class="nom-info-body">
+                <div class="nom-info-section">
+                    <h3>О номинации</h3>
+                    <p>Побеждает команда, которая покажет максимальный пролив текилы на 1 м² заведения за весь период фестиваля с <strong>15 июня по 23 августа</strong>.</p>
+                    <p><strong>Главный приз: 350 000 ₽</strong></p>
+                </div>
+                <div class="nom-info-section">
+                    <h3>Формула итогового результата</h3>
+                    <div class="nom-info-formula">
+                        (Пролив с учётом коэффициентов + дополнительные баллы-литры) ÷ площадь заведения (м²) = итоговый результат
+                    </div>
+                </div>
+                <div class="nom-info-section">
+                    <h3>Коэффициенты по категориям</h3>
+                    <table class="nom-info-table">
+                        <thead><tr><th>Категория</th><th>Коэф.</th><th>Пример (10 л)</th></tr></thead>
+                        <tbody>
+                            <tr><td>Espolón Cristalino</td><td class="coef">× 2,0</td><td>20 балл.-л.</td></tr>
+                            <tr><td>Espolón Añejo</td><td class="coef">× 1,5</td><td>15 балл.-л.</td></tr>
+                            <tr><td>Espolón Reposado</td><td class="coef">× 1,2</td><td>12 балл.-л.</td></tr>
+                            <tr><td>Espolón Blanco</td><td class="coef">× 1,0</td><td>10 балл.-л.</td></tr>
+                            <tr><td>Коктейли (40 мл текилы)</td><td class="coef">× 0,5</td><td>5 балл.-л.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="nom-info-section">
+                    <h3>Дополнительные баллы-литры</h3>
+                    <p>Чтобы заработать дополнительные баллы-литры, сделай:</p>
+                    <ul>
+                        <li>Пост об участии в фестивале — <strong>+10 баллов-литров</strong></li>
+                        <li>Видео о правильном употреблении текилы из 100% голубой агавы (по условиям «Вызов стереотипам») — <strong>+10 баллов-литров</strong></li>
+                    </ul>
+                    <div class="nom-info-note">Засчитывается только <strong>1 пост</strong> и <strong>1 видео</strong>.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             ИНФО: ВЫЗОВ СТЕРЕОТИПАМ
+        ══════════════════════════════════════ -->
+        <div class="page" id="nomInfoPage-stereo">
+            <div class="reg-page-header">
+                <button class="reg-back-btn" onclick="showPage('nomDetailPage-stereo')">‹</button>
+                <span class="reg-page-title">Вызов стереотипам</span>
+            </div>
+            <div class="nom-info-body">
+                <div class="nom-info-section">
+                    <h3>О номинации</h3>
+                    <p>Сними видео, которое разрушает стереотип «соль+лайм» и показывает правильный ритуал потребления текилы из 100% голубой агавы.</p>
+                    <p><strong>Главный приз: 110 000 ₽</strong></p>
+                </div>
+                <div class="nom-info-section">
+                    <h3>Что должно быть в видео</h3>
+                    <ul>
+                        <li>Разрушен стереотип о потреблении текилы с солью и лаймом</li>
+                        <li>Показано, как сопровождение (сезонные фрукты/ягоды) подчёркивает вкус текилы</li>
+                        <li>Объяснено, почему такой способ правильный</li>
+                    </ul>
+                </div>
+                <div class="nom-info-section">
+                    <h3>Где и как публиковать</h3>
+                    <ul>
+                        <li>Аккаунт заведения, капитана или соавторство</li>
+                        <li>Хештеги: <strong>#DiaMuertosCompetition26 #ЛетнийФестивальТекилы</strong></li>
+                        <li>Отметить судей: <strong>@dm.simonchuk @dariya_sakhalinskaya</strong></li>
+                        <li>Ссылку на публикацию отправить в бот в период <strong>24–31 августа</strong></li>
+                    </ul>
+                </div>
+                <div class="nom-info-section">
+                    <h3>Технические требования</h3>
+                    <ul>
+                        <li>Период публикации: <strong>15 июня – 23 августа</strong></li>
+                        <li>Видео снято специально для конкурса (уникальный контент)</li>
+                        <li>Продолжительность: <strong>60–90 секунд</strong></li>
+                    </ul>
+                </div>
+                <div class="nom-info-section">
+                    <h3>Критерии оценки</h3>
+                    <table class="nom-info-table">
+                        <thead><tr><th>Критерий</th><th>Баллы</th></tr></thead>
+                        <tbody>
+                            <tr><td>Донесение уникальности текилы из 100% голубой агавы и разрушение стереотипа</td><td class="score">до 10</td></tr>
+                            <tr><td>Визуал</td><td class="score">до 10</td></tr>
+                            <tr><td>Общее впечатление</td><td class="score">до 10</td></tr>
+                            <tr><td>Охват: 1–3 тыс. — 5 / 3–5 тыс. — 7,5 / от 5 тыс. — 10</td><td class="score">до 10</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="nom-info-note">
+                    Публикация по правилам этой номинации автоматически даёт <strong>+10 баллов-литров</strong> в номинацию «Дух бунтарей».
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             ИНФО: НАРУШИТЕЛИ ТИШИНЫ
+        ══════════════════════════════════════ -->
+        <div class="page" id="nomInfoPage-tiresome">
+            <div class="reg-page-header">
+                <button class="reg-back-btn" onclick="showPage('nomDetailPage-tiresome')">‹</button>
+                <span class="reg-page-title">Нарушители тишины</span>
+            </div>
+            <div class="nom-info-body">
+                <div class="nom-info-tag">Дополнительная номинация</div>
+                <div class="nom-info-section">
+                    <h3>О номинации</h3>
+                    <p>Организуй бунтарскую вечеринку в духе Espolón, вдохновлённую современной Мексикой.</p>
+                    <p><strong>Приз: 80 000 ₽ · Период: 15.06 – 08.07</strong></p>
+                </div>
+                <div class="nom-info-section">
+                    <h3>Что нужно сделать</h3>
+                    <ul>
+                        <li>Разработай идею вечеринки — интерпретация современной Мексики через твоё заведение</li>
+                        <li>Собери муд-борд: референсы вечеринок, декор, образы для гостей и команды</li>
+                        <li>Пригласи гостей и проведи вечеринку в своём заведении в период <strong>15 июня – 8 июля</strong></li>
+                        <li>Сделай публикацию (пост и/или видео) с отчётом о вечеринке в период <strong>15 июня – 8 июля</strong></li>
+                        <li>Сдай отчёт в бот в период <strong>9 июля – 16 июля</strong>: ссылка на муд-борд + фото-отчёт + видео-отчёт</li>
+                    </ul>
+                </div>
+                <div class="nom-info-section">
+                    <h3>Где и как публиковать</h3>
+                    <ul>
+                        <li>Аккаунт заведения, капитана или соавторство</li>
+                        <li>Хештеги: <strong>#DiaMuertosCompetition26 #ЛетнийФестивальТекилы</strong></li>
+                        <li>Отметить судей: <strong>@idrisgitinaev @dm.simonchuk @dariya_sakhalinskaya</strong></li>
+                        <li>Ссылки на публикации отправить в бот в период <strong>9 июля – 16 июля</strong></li>
+                    </ul>
+                </div>
+                <div class="nom-info-section">
+                    <h3>Критерии оценки</h3>
+                    <table class="nom-info-table">
+                        <thead><tr><th>Критерий</th><th>Баллы</th></tr></thead>
+                        <tbody>
+                            <tr><td>Идея: концепция, связь с духом Espolón, вдохновение современной Мексикой</td><td class="score">до 10</td></tr>
+                            <tr><td>Реализация: соответствие заявленной идее</td><td class="score">до 15</td></tr>
+                            <tr><td>Общее впечатление (личная оценка каждого судьи)</td><td class="score">до 10</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="nom-info-note">Итоговый результат = сумма баллов ÷ 3.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             ИНФО: ДРАЙВЕРЫ CRISTALINO
+        ══════════════════════════════════════ -->
+        <div class="page" id="nomInfoPage-cristalino">
+            <div class="reg-page-header">
+                <button class="reg-back-btn" onclick="showPage('nomDetailPage-cristalino')">‹</button>
+                <span class="reg-page-title">Драйверы Cristalino</span>
+            </div>
+            <div class="nom-info-body">
+                <div class="nom-info-tag">Дополнительная номинация</div>
+                <div class="nom-info-section">
+                    <h3>О номинации</h3>
+                    <p>Пролей как можно больше Espolón Cristalino за отведённый период.</p>
+                    <p><strong>Приз: 80 000 ₽</strong></p>
+                </div>
+                <div class="nom-info-section">
+                    <h3>Особенности</h3>
+                    <ul>
+                        <li>Период: <strong>9 июля – 31 июля</strong></li>
+                        <li>Побеждает команда с максимальным объёмом пролива Cristalino в литрах</li>
+                        <li>Система деления на площадь и коэффициенты <strong>не применяются</strong></li>
+                        <li>Данные нужно внести в бот в период <strong>1–8 августа</strong></li>
+                        <li>Литры из этой номинации идут в зачёт <strong>«Дух бунтарей»</strong></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             ИНФО: ДЕРЗКИЙ ПРОСВЕТИТЕЛЬ
+        ══════════════════════════════════════ -->
+        <div class="page" id="nomInfoPage-enlighten">
+            <div class="reg-page-header">
+                <button class="reg-back-btn" onclick="showPage('nomDetailPage-enlighten')">‹</button>
+                <span class="reg-page-title">Дерзкий просветитель</span>
+            </div>
+            <div class="nom-info-body">
+                <div class="nom-info-tag">Дополнительная номинация</div>
+                <div class="nom-info-section">
+                    <h3>О номинации</h3>
+                    <p>Создай виральный образовательный контент о текиле из 100% голубой агавы.</p>
+                    <p><strong>Приз: 80 000 ₽ · Период: 01.08 – 23.08</strong></p>
+                </div>
+                <div class="nom-info-section">
+                    <h3>Что нужно создать</h3>
+                    <p>Минимум <strong>3 единицы контента</strong> разного формата: пост, пост-карусель, видео или статья.</p>
+                    <p>Каждая единица контента должна показывать, что сопровождение (сезонные фрукты, ягоды и т.д.) подчёркивает вкус текилы из 100% голубой агавы, а не перебивает его.</p>
+                </div>
+                <div class="nom-info-section">
+                    <h3>Где и как публиковать</h3>
+                    <ul>
+                        <li>Любые социальные сети заведения или капитана; возможны статьи в медиа</li>
+                        <li>Хештеги: <strong>#DiaMuertosCompetition26 #ЛетнийФестивальТекилы</strong></li>
+                        <li>Отметить судей: <strong>@dm.simonchuk @dariya_sakhalinskaya</strong></li>
+                        <li>Ссылки на все публикации отправить в бот в период <strong>24–30 августа</strong></li>
+                    </ul>
+                </div>
+                <div class="nom-info-section">
+                    <h3>Технические требования</h3>
+                    <ul>
+                        <li>Период публикаций: <strong>1 августа – 23 августа</strong></li>
+                    </ul>
+                </div>
+                <div class="nom-info-section">
+                    <h3>Критерии оценки</h3>
+                    <table class="nom-info-table">
+                        <thead><tr><th>Критерий</th><th>Баллы</th></tr></thead>
+                        <tbody>
+                            <tr><td>Образовательный концепт: насколько понятно и интересно объяснена тема</td><td class="score">до 10</td></tr>
+                            <tr><td>Визуал: картинка и соответствие духу бренда</td><td class="score">до 10</td></tr>
+                            <tr><td>Количество: мин. 3 ед. = 10 баллов, каждая доп. публикация +2,5 балла</td><td class="score">до 10 + бонус</td></tr>
+                            <tr><td>Охват: 1–3 тыс. — 5 / 3–5 тыс. — 7,5 / 5–10 тыс. — 10</td><td class="score">до 10</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="nom-info-note">Итоговая оценка = сумма всех баллов ÷ 2.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             ГАЙД УЧАСТНИКА (полные правила)
+        ══════════════════════════════════════ -->
+        <div class="page" id="rulesInfoPage">
+            <div class="reg-page-header">
+                <button class="reg-back-btn" onclick="showPage('rulesPage')">‹</button>
+                <span class="reg-page-title">Гайд участника</span>
+            </div>
+            <div class="nom-info-body">
+
+                <!-- Шапка-сводка -->
+                <div class="rules-info-summary">
+                    <div class="ris-title">Dia Muertos Competition 26</div>
+                    <div class="ris-subtitle">Летний фестиваль текилы</div>
+                    <div class="ris-grid">
+                        <div class="ris-item"><span class="ris-label">Участники</span><span class="ris-val">Барные команды заведений с алкогольной лицензией</span></div>
+                        <div class="ris-item"><span class="ris-label">Регистрация</span><span class="ris-val">11 мая – 14 июня 2026</span></div>
+                        <div class="ris-item"><span class="ris-label">Фестиваль</span><span class="ris-val">15 июня – 23 августа 2026</span></div>
+                        <div class="ris-item"><span class="ris-label">Хештеги</span><span class="ris-val">#DiaMuertosCompetition26 #ЛетнийФестивальТекилы</span></div>
+                        <div class="ris-item"><span class="ris-label">Судьи</span><span class="ris-val">Дмитрий Симончук, Дарья Куксина, Идрис Гитинаев</span></div>
+                    </div>
+                </div>
+
+                <div class="nom-info-section">
+                    <h3>О конкурсе</h3>
+                    <p>Dia Muertos Competition 26: Летний фестиваль текилы — это фестиваль для барных команд заведений. Смысл не только в количестве литров — это про культуру потребления текилы из 100% голубой агавы, про отказ от стереотипа «соль + лайм» и про то, чтобы показать гостям настоящий вкус текилы.</p>
+                    <p>В конкурсе <strong>5 номинаций</strong>: 2 основные и 3 дополнительные. Можно участвовать во всех сразу, а данные из дополнительных номинаций идут в зачёт основной.</p>
+                </div>
+
+                <div class="nom-info-section">
+                    <h3>Календарь фестиваля</h3>
+                    <table class="nom-info-table">
+                        <thead><tr><th>Период</th><th>Что происходит</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>11 мая – 14 июня</strong></td><td>Регистрация команд в ТГ-боте + загрузка фото меню</td></tr>
+                            <tr><td><strong>15 июня – 23 августа</strong></td><td>Основные номинации: Дух бунтарей и Вызов стереотипам</td></tr>
+                            <tr><td><strong>15 июня – 8 июля</strong></td><td>«Нарушители тишины»: организуй и проведи вечеринку</td></tr>
+                            <tr><td><strong>30 июня – 1 июля</strong></td><td>Сдай промежуточный результат по литрам в бот</td></tr>
+                            <tr><td><strong>9 июля – 16 июля</strong></td><td>«Нарушители тишины»: сдай отчёт о вечеринке в бот</td></tr>
+                            <tr><td><strong>9 июля – 31 июля</strong></td><td>«Драйверы Cristalino»: максимальный пролив Cristalino</td></tr>
+                            <tr><td><strong>1 авг – 8 авг</strong></td><td>«Драйверы Cristalino»: сдай данные по Cristalino в бот</td></tr>
+                            <tr><td><strong>1 авг – 23 авг</strong></td><td>«Дерзкий просветитель»: публикуй образовательный контент</td></tr>
+                            <tr><td><strong>24 авг – 30 авг</strong></td><td>«Дерзкий просветитель»: сдай ссылки на контент в бот</td></tr>
+                            <tr><td><strong>24 авг – 31 авг</strong></td><td>Вносишь финальные данные по основным номинациям в бот</td></tr>
+                            <tr><td><strong>24 авг – 6 сент</strong></td><td>Подведение итогов и выбор победителей</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="nom-info-section">
+                    <h3>Шаг 1 — Зарегистрировать команду</h3>
+                    <p class="ris-step-date">11 мая – 14 июня</p>
+                    <p>Зайди в ТГ-бот и зарегистрируй команду. При регистрации укажи:</p>
+                    <ul>
+                        <li>Название заведения и город</li>
+                        <li>Ссылку на соцсети заведения</li>
+                        <li>Ссылку на соцсети капитана команды</li>
+                        <li>Площадь заведения (в м²) — важно для расчёта итогового результата</li>
+                        <li>Юридическое лицо и номер алкогольной лицензии</li>
+                    </ul>
+                    <div class="nom-info-note">После регистрации распечатай фестивальное меню и отправь фото в бот. <a href="#" class="ris-link">Шаблон меню →</a></div>
+                </div>
+
+                <div class="nom-info-section">
+                    <h3>Шаг 2 — Внедри фестивальное меню</h3>
+                    <p class="ris-step-date">15 июня – 23 августа</p>
+                    <p>Распечатай и размести в заведении фестивальное меню:</p>
+                    <ul>
+                        <li>Espolón Blanco — с сезонным фруктом/ягодой</li>
+                        <li>Espolón Reposado — с сезонным фруктом/ягодой</li>
+                        <li>Espolón Añejo — с сезонным фруктом/ягодой</li>
+                        <li>Espolón Cristalino — с обыгранной подачей через ритуал</li>
+                        <li>Коктейль на основе Espolón — макс. 1 коктейль в меню</li>
+                    </ul>
+                    <div class="nom-info-note">Примеры сезонных фруктов/ягод и подробнее о ритуале подачи Cristalino — в FAQ.</div>
+                </div>
+
+                <div class="nom-info-section">
+                    <h3>Шаг 3 — Участвуй в номинациях</h3>
+                    <p class="ris-step-date">15 июня – 23 августа</p>
+                    <p>Предлагай гостям напитки из фестивального меню и участвуй в дополнительных номинациях: проведи вечеринку, создавай контент о текиле из 100% голубой агавы. Подробнее — в разделе «Номинации».</p>
+                </div>
+
+                <div class="nom-info-section">
+                    <h3>Шаг 4 — Внеси данные в бот</h3>
+                    <p class="ris-step-date">24 – 31 августа</p>
+                    <p>В финальный период внеси все данные по основным номинациям:</p>
+                    <ul>
+                        <li>Пролив по каждой категории текилы (в литрах)</li>
+                        <li>Количество приготовленных коктейлей (в штуках)</li>
+                        <li>Ссылка на видео для «Вызова стереотипам» (если делали)</li>
+                        <li>Ссылка на пост (если делали)</li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+
+    <script src="/static/js/tg.js"></script>
+    <script>
+        // ── Nominations nav ──
+        window.goToNominations = function() {
+            showPage('nominationsHubPage');
+            const lockEl = document.getElementById('nomLockedNotice');
+            if (lockEl) lockEl.style.display = canUseNominations() ? 'none' : 'block';
+            document.querySelectorAll('.nom-card').forEach(c => {
+                c.style.pointerEvents = canUseNominations() ? '' : 'none';
+                c.style.opacity       = canUseNominations() ? '' : '0.45';
+            });
+        };
+    </script>
+</body>
+</html>
