@@ -36,8 +36,9 @@ BOT_TOKEN = os.environ.get('BOT_TOKEN', '8578244905:AAFn7c9e5ionISowOXgYDW92sqg7
 
 # Имена листов
 SHEET_TEAMS        = 'Команды'
-SHEET_NOM_EXTRA    = 'Основные'       # данные: Дух бунтарей + Вызов стереотипам
-SHEET_NOM_MAIN     = 'Дополнительные'    # данные форм: tiresome/cristalino/enlighten
+SHEET_NOM_EXTRA    = 'Дополнительные'       # данные: cristalino / enlighten
+SHEET_NOM_MAIN     = 'Основные'    # данные форм: spirit/stereo
+SHEET_NOM_TIRESOME = 'Нарушители тишины'   # заявки номинации tiresome (структурированные)
 SHEET_ENROLL_TIRESOME  = 'Тишина'        # записи «Участвую» → Нарушители тишины
 SHEET_ENROLL_CRISTALINO= 'Драйверы'      # записи «Участвую» → Драйверы Cristalino
 SHEET_ENROLL_ENLIGHTEN = 'Просветитель'  # записи «Участвую» → Дерзкий просветитель
@@ -80,6 +81,13 @@ def get_or_create_sheet(spreadsheet, title, headers):
 
 _ENROLL_HEADERS = ['Дата', 'TG ID', 'TG Username', 'Имя']
 
+# Заголовки листа «Нарушители тишины» — структурированные колонки
+# (вместо единого JSON-блока, как в «Дополнительные»)
+_TIRESOME_HEADERS = [
+    'Дата', 'TG ID', 'TG Username', 'Имя', 'Номинация',
+    'Ссылка на фото-отчёт', 'Ссылка на видео-отчёт', 'Ссылка на муд-борд',
+]
+
 def ensure_sheets(spreadsheet):
     """Создать все нужные листы если их нет."""
     get_or_create_sheet(spreadsheet, SHEET_TEAMS, [
@@ -97,6 +105,8 @@ def ensure_sheets(spreadsheet):
         'Коктейли (шт)', 'Ссылка на пост', 'Ссылка на видео',
         'Ссылка 1', 'Ссылка 2', 'Ссылка 3',
     ])
+    # Новый отдельный лист для заявок «Нарушители тишины» (структурированный)
+    get_or_create_sheet(spreadsheet, SHEET_NOM_TIRESOME, _TIRESOME_HEADERS)
     # Листы записи заявок на участие в дополнительных номинациях
     get_or_create_sheet(spreadsheet, SHEET_ENROLL_TIRESOME,   _ENROLL_HEADERS)
     get_or_create_sheet(spreadsheet, SHEET_ENROLL_CRISTALINO, _ENROLL_HEADERS)
@@ -174,10 +184,11 @@ def check_registration():
         tg_ids = ws_teams.col_values(2)  # TG ID column
         registered = tg_id in tg_ids
 
-        # Check submitted nominations (extra: Дух и Вызов sheet)
+        # Check submitted nominations
         submitted_noms = []
         NOM_ID_MAP = {
-            'Нарушители тишины':  'tiresome',
+            # Только cristalino и enlighten по-прежнему пишутся в «Дополнительные».
+            # tiresome теперь проверяется отдельно, в своём листе.
             'Драйверы Cristalino': 'cristalino',
             'Дерзкий просветитель': 'enlighten',
         }
@@ -186,7 +197,7 @@ def check_registration():
             'Вызов стереотипам':  'stereo',
         }
 
-        # Extra nominations sheet
+        # Extra nominations sheet (cristalino / enlighten)
         try:
             ws_extra = ss.worksheet(SHEET_NOM_EXTRA)
             rows_extra = ws_extra.get_all_values()
@@ -196,6 +207,17 @@ def check_registration():
                     nom_id = NOM_ID_MAP.get(nom_label)
                     if nom_id:
                         submitted_noms.append(nom_id)
+        except Exception:
+            pass
+
+        # Tiresome nominations sheet (отдельный лист «Нарушители тишины»)
+        try:
+            ws_tiresome = ss.worksheet(SHEET_NOM_TIRESOME)
+            rows_tiresome = ws_tiresome.get_all_values()
+            for row in rows_tiresome[1:]:  # skip header
+                if len(row) >= 2 and row[1] == tg_id:
+                    submitted_noms.append('tiresome')
+                    break
         except Exception:
             pass
 
@@ -213,17 +235,26 @@ def check_registration():
             pass
 
         # Check enrollment in extra nominations (Тишина / Драйверы / Просветитель)
+        # Only mark a user as enrolled if a corresponding submitted application
+        # still exists in the relevant nomination sheet (Дополнительные для
+        # cristalino/enlighten, Нарушители тишины для tiresome). Если запись
+        # об участии осталась, но сама заявка была удалена вручную —
+        # пользователь не считается "уже отправившим" и должен снова увидеть форму.
         enrolled_noms = []
+        submitted_extra = set(submitted_noms)
+
         ENROLL_MAP = {
-            SHEET_ENROLL_TIRESOME:   'tiresome',
+            SHEET_ENROLL_TIRESOME: 'tiresome',
             SHEET_ENROLL_CRISTALINO: 'cristalino',
-            SHEET_ENROLL_ENLIGHTEN:  'enlighten',
+            SHEET_ENROLL_ENLIGHTEN: 'enlighten',
         }
+
         for sheet_title, nom_key in ENROLL_MAP.items():
             try:
                 ws_enroll = ss.worksheet(sheet_title)
                 ids = ws_enroll.col_values(2)
-                if tg_id in ids:
+
+                if tg_id in ids and nom_key in submitted_extra:
                     enrolled_noms.append(nom_key)
             except Exception:
                 pass
@@ -371,7 +402,16 @@ def submit_nomination():
         ss = gc.open_by_key(SPREADSHEET_ID)
         ensure_sheets(ss)
 
-        if nom_id in ('tiresome', 'cristalino', 'enlighten'):
+        if nom_id == 'tiresome':
+            # Пишем структурированной строкой в отдельный лист
+            # «Нарушители тишины», а не JSON-блоком в «Дополнительные».
+            ws = ss.worksheet(SHEET_NOM_TIRESOME)
+            ws.append_row([
+                now, tg_id, tg_user, tg_name, nom_label,
+                g('tiresome-photo'), g('tiresome-video'), g('tiresome-moodboard'),
+            ])
+
+        elif nom_id in ('cristalino', 'enlighten'):
             ws = ss.worksheet(SHEET_NOM_EXTRA)
             # Build compact JSON of all submitted fields
             extra = {k: v for k, v in data.items()
