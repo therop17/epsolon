@@ -47,12 +47,20 @@ SHEET_ENROLL_ENLIGHTEN = 'Просветитель'  # записи «Участ
 # GOOGLE SHEETS CLIENT
 # ══════════════════════════════════════════════
 
+_sheets_client = None
+_spreadsheet = None
+
 def get_sheets_client():
     """
-    Создать авторизованный клиент Google Sheets.
+    Создать авторизованный клиент Google Sheets (переиспользуется между
+    запросами — иначе каждый запрос заново проходил бы OAuth-обмен токеном).
     Продакшн: переменная окружения GOOGLE_CREDENTIALS (JSON-строка или base64).
     Локально:  файл credits.json рядом с app.py.
     """
+    global _sheets_client
+    if _sheets_client is not None:
+        return _sheets_client
+
     import base64
 
     raw = os.environ.get('GOOGLE_CREDENTIALS', '')
@@ -66,16 +74,34 @@ def get_sheets_client():
     else:
         creds_path = os.path.join(os.path.dirname(__file__), 'credits.json')
         creds = Credentials.from_service_account_file(creds_path, scopes=SCOPES)
-    return gspread.authorize(creds)
+    _sheets_client = gspread.authorize(creds)
+    return _sheets_client
 
 
-def get_or_create_sheet(spreadsheet, title, headers):
-    """Получить лист или создать с заголовками."""
-    try:
-        ws = spreadsheet.worksheet(title)
-    except gspread.WorksheetNotFound:
+def get_spreadsheet():
+    """Открыть таблицу (переиспользуется между запросами, как и клиент выше)."""
+    global _spreadsheet
+    if _spreadsheet is None:
+        _spreadsheet = get_sheets_client().open_by_key(SPREADSHEET_ID)
+    return _spreadsheet
+
+
+def get_worksheet_map(spreadsheet):
+    """
+    Один вызов spreadsheet.worksheets() вместо множества spreadsheet.worksheet(title) —
+    у gspread каждый .worksheet(title) заново скачивает метаданные ВСЕЙ таблицы,
+    а ensure_sheets() и роуты обращаются к листам по имени по многу раз за запрос.
+    """
+    return {ws.title: ws for ws in spreadsheet.worksheets()}
+
+
+def get_or_create_sheet(spreadsheet, ws_map, title, headers):
+    """Получить лист из ws_map или создать с заголовками."""
+    ws = ws_map.get(title)
+    if ws is None:
         ws = spreadsheet.add_worksheet(title=title, rows=1000, cols=len(headers))
         ws.append_row(headers)
+        ws_map[title] = ws
     return ws
 
 
@@ -88,31 +114,31 @@ _TIRESOME_HEADERS = [
     'Ссылка на фото-отчёт', 'Ссылка на видео-отчёт', 'Ссылка на муд-борд',
 ]
 
-def ensure_sheets(spreadsheet):
-    """Создать все нужные листы если их нет."""
-    get_or_create_sheet(spreadsheet, SHEET_TEAMS, [
+def ensure_sheets(spreadsheet, ws_map):
+    """Создать все нужные листы если их нет (по уже загруженной ws_map, без лишних запросов)."""
+    get_or_create_sheet(spreadsheet, ws_map, SHEET_TEAMS, [
         'Дата', 'TG ID', 'TG Username', 'Имя', 'Город', 'Заведение',
         'Соцсеть заведения', 'Соцсеть капитана', 'Площадь (м²)',
         'Номер лицензии', 'Юр. лицо / ИП', 'Ссылка на лицензию',
     ])
-    get_or_create_sheet(spreadsheet, SHEET_NOM_EXTRA, [
+    get_or_create_sheet(spreadsheet, ws_map, SHEET_NOM_EXTRA, [
         'Дата', 'TG ID', 'TG Username', 'Имя', 'Номинация',
         'Данные (JSON)',
     ])
-    get_or_create_sheet(spreadsheet, SHEET_NOM_MAIN, [
+    get_or_create_sheet(spreadsheet, ws_map, SHEET_NOM_MAIN, [
         'Дата', 'TG ID', 'TG Username', 'Имя', 'Номинация',
         'Cristalino (л)', 'Anejo (л)', 'Reposado (л)', 'Blanco (л)',
         'Коктейли (шт)', 'Ссылка на пост', 'Ссылка на видео',
         'Ссылка 1', 'Ссылка 2', 'Ссылка 3',
     ])
     # Новый отдельный лист для заявок «Нарушители тишины» (структурированный)
-    get_or_create_sheet(spreadsheet, SHEET_NOM_TIRESOME, _TIRESOME_HEADERS)
+    get_or_create_sheet(spreadsheet, ws_map, SHEET_NOM_TIRESOME, _TIRESOME_HEADERS)
     # Листы записи заявок на участие в дополнительных номинациях
-    get_or_create_sheet(spreadsheet, SHEET_ENROLL_TIRESOME,   _ENROLL_HEADERS)
-    get_or_create_sheet(spreadsheet, SHEET_ENROLL_CRISTALINO, _ENROLL_HEADERS)
-    get_or_create_sheet(spreadsheet, SHEET_ENROLL_ENLIGHTEN,  _ENROLL_HEADERS)
+    get_or_create_sheet(spreadsheet, ws_map, SHEET_ENROLL_TIRESOME,   _ENROLL_HEADERS)
+    get_or_create_sheet(spreadsheet, ws_map, SHEET_ENROLL_CRISTALINO, _ENROLL_HEADERS)
+    get_or_create_sheet(spreadsheet, ws_map, SHEET_ENROLL_ENLIGHTEN,  _ENROLL_HEADERS)
     # Меню
-    get_or_create_sheet(spreadsheet, 'Меню', [
+    get_or_create_sheet(spreadsheet, ws_map, 'Меню', [
         'Дата', 'TG ID', 'TG Username', 'Имя', 'Ссылка на меню',
     ])
 
@@ -175,12 +201,12 @@ def check_registration():
         return jsonify({'registered': False, 'nominations': []}), 200
 
     try:
-        gc = get_sheets_client()
-        ss = gc.open_by_key(SPREADSHEET_ID)
-        ensure_sheets(ss)
+        ss = get_spreadsheet()
+        ws_map = get_worksheet_map(ss)
+        ensure_sheets(ss, ws_map)
 
         # Check team registration
-        ws_teams = ss.worksheet(SHEET_TEAMS)
+        ws_teams = ws_map[SHEET_TEAMS]
         tg_ids = ws_teams.col_values(2)  # TG ID column
         registered = tg_id in tg_ids
 
@@ -199,7 +225,7 @@ def check_registration():
 
         # Extra nominations sheet (cristalino / enlighten)
         try:
-            ws_extra = ss.worksheet(SHEET_NOM_EXTRA)
+            ws_extra = ws_map[SHEET_NOM_EXTRA]
             rows_extra = ws_extra.get_all_values()
             for row in rows_extra[1:]:  # skip header
                 if len(row) >= 5 and row[1] == tg_id:
@@ -212,7 +238,7 @@ def check_registration():
 
         # Tiresome nominations sheet (отдельный лист «Нарушители тишины»)
         try:
-            ws_tiresome = ss.worksheet(SHEET_NOM_TIRESOME)
+            ws_tiresome = ws_map[SHEET_NOM_TIRESOME]
             rows_tiresome = ws_tiresome.get_all_values()
             for row in rows_tiresome[1:]:  # skip header
                 if len(row) >= 2 and row[1] == tg_id:
@@ -223,7 +249,7 @@ def check_registration():
 
         # Main nominations sheet
         try:
-            ws_main = ss.worksheet(SHEET_NOM_MAIN)
+            ws_main = ws_map[SHEET_NOM_MAIN]
             rows_main = ws_main.get_all_values()
             for row in rows_main[1:]:
                 if len(row) >= 5 and row[1] == tg_id:
@@ -251,7 +277,7 @@ def check_registration():
 
         for sheet_title, nom_key in ENROLL_MAP.items():
             try:
-                ws_enroll = ss.worksheet(sheet_title)
+                ws_enroll = ws_map[sheet_title]
                 ids = ws_enroll.col_values(2)
 
                 if tg_id in ids and nom_key in submitted_extra:
@@ -303,10 +329,10 @@ def register_team():
     ]
 
     try:
-        gc = get_sheets_client()
-        ss = gc.open_by_key(SPREADSHEET_ID)
-        ensure_sheets(ss)
-        ws = ss.worksheet(SHEET_TEAMS)
+        ss = get_spreadsheet()
+        ws_map = get_worksheet_map(ss)
+        ensure_sheets(ss, ws_map)
+        ws = ws_map[SHEET_TEAMS]
 
         # Check if already registered (by TG ID)
         if tg_id:
@@ -348,13 +374,12 @@ def enroll_nomination():
         return jsonify({'error': f'Unknown nomination: {nom_id}'}), 400
 
     try:
-        gc = get_sheets_client()
-        ss = gc.open_by_key(SPREADSHEET_ID)
+        ss = get_spreadsheet()
+        ws_map = get_worksheet_map(ss)
 
         # Find or create the enrollment sheet
-        try:
-            ws = ss.worksheet(sheet_name)
-        except gspread.WorksheetNotFound:
+        ws = ws_map.get(sheet_name)
+        if ws is None:
             ws = ss.add_worksheet(title=sheet_name, rows=1000, cols=4)
             ws.append_row(_ENROLL_HEADERS)
 
@@ -398,28 +423,28 @@ def submit_nomination():
     def g(k): return str(data.get(k, '') or '')
 
     try:
-        gc = get_sheets_client()
-        ss = gc.open_by_key(SPREADSHEET_ID)
-        ensure_sheets(ss)
+        ss = get_spreadsheet()
+        ws_map = get_worksheet_map(ss)
+        ensure_sheets(ss, ws_map)
 
         if nom_id == 'tiresome':
             # Пишем структурированной строкой в отдельный лист
             # «Нарушители тишины», а не JSON-блоком в «Дополнительные».
-            ws = ss.worksheet(SHEET_NOM_TIRESOME)
+            ws = ws_map[SHEET_NOM_TIRESOME]
             ws.append_row([
                 now, tg_id, tg_user, tg_name, nom_label,
                 g('tiresome-photo'), g('tiresome-video'), g('tiresome-moodboard'),
             ])
 
         elif nom_id in ('cristalino', 'enlighten'):
-            ws = ss.worksheet(SHEET_NOM_EXTRA)
+            ws = ws_map[SHEET_NOM_EXTRA]
             # Build compact JSON of all submitted fields
             extra = {k: v for k, v in data.items()
                      if k not in ('nomination_id','telegram_user_id','telegram_username','telegram_name','submitted_at')}
             ws.append_row([now, tg_id, tg_user, tg_name, nom_label, json.dumps(extra, ensure_ascii=False)])
 
         elif nom_id in ('spirit', 'stereo'):
-            ws = ss.worksheet(SHEET_NOM_MAIN)
+            ws = ws_map[SHEET_NOM_MAIN]
             ws.append_row([
                 now, tg_id, tg_user, tg_name, nom_label,
                 g(f'{nom_id}-cristalino'), g(f'{nom_id}-anejo'),
@@ -462,15 +487,15 @@ def get_nomination_data():
         return jsonify({'found': False}), 200
 
     try:
-        gc = get_sheets_client()
-        ss = gc.open_by_key(SPREADSHEET_ID)
-        ensure_sheets(ss)
+        ss = get_spreadsheet()
+        ws_map = get_worksheet_map(ss)
+        ensure_sheets(ss, ws_map)
 
         row = None
         fields = []
 
         if nom_id == 'tiresome':
-            ws = ss.worksheet(SHEET_NOM_TIRESOME)
+            ws = ws_map[SHEET_NOM_TIRESOME]
             labels = ['Ссылка на фото-отчёт', 'Ссылка на видео-отчёт', 'Ссылка на муд-борд']
             for r in reversed(ws.get_all_values()[1:]):
                 if len(r) >= 2 and r[1] == tg_id:
@@ -481,7 +506,7 @@ def get_nomination_data():
                 fields = [{'label': l, 'value': v} for l, v in zip(labels, values) if v]
 
         elif nom_id in ('cristalino', 'enlighten'):
-            ws = ss.worksheet(SHEET_NOM_EXTRA)
+            ws = ws_map[SHEET_NOM_EXTRA]
             for r in reversed(ws.get_all_values()[1:]):
                 if len(r) >= 5 and r[1] == tg_id and r[4] == nom_label:
                     row = r
@@ -507,7 +532,7 @@ def get_nomination_data():
                     fields.append({'label': label or k, 'value': v})
 
         elif nom_id in ('spirit', 'stereo'):
-            ws = ss.worksheet(SHEET_NOM_MAIN)
+            ws = ws_map[SHEET_NOM_MAIN]
             labels = [
                 'Espolón Cristalino (л)', 'Espolón Anejo (л)', 'Espolón Reposado (л)',
                 'Espolón Blanco (л)', 'Коктейли (шт)', 'Ссылка на пост', 'Ссылка на видео',
@@ -549,12 +574,11 @@ def upload_menu():
     menu_link = str(data.get('menu_link', ''))
 
     try:
-        gc = get_sheets_client()
-        ss = gc.open_by_key(SPREADSHEET_ID)
+        ss = get_spreadsheet()
+        ws_map = get_worksheet_map(ss)
         # Write to a 'Меню' sheet
-        try:
-            ws = ss.worksheet('Меню')
-        except:
+        ws = ws_map.get('Меню')
+        if ws is None:
             ws = ss.add_worksheet(title='Меню', rows=1000, cols=6)
             ws.append_row(['Дата', 'TG ID', 'TG Username', 'Имя', 'Ссылка на меню'])
         ws.append_row([now, tg_id, tg_user, tg_name, menu_link])
