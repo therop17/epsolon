@@ -29,10 +29,10 @@ SCOPES = [
 
 # Вставь ID своей Google таблицы (часть URL между /d/ и /edit)
 # Пример: https://docs.google.com/spreadsheets/d/ЭТОТ_ID/edit
-SPREADSHEET_ID = os.environ.get('SPREADSHEET_ID', '')
+SPREADSHEET_ID = os.environ.get('SPREADSHEET_ID', '1MSuNj35A6h-G98KqEpskFpa2JYijquS3i0xtDRu3tsg')
 
 # Telegram Bot Token (для валидации initData)
-BOT_TOKEN = os.environ.get('BOT_TOKEN', '')
+BOT_TOKEN = os.environ.get('BOT_TOKEN', '8578244905:AAFn7c9e5ionISowOXgYDW92sqg7sc-q4hw')
 
 # Имена листов
 SHEET_TEAMS        = 'Команды'
@@ -127,7 +127,7 @@ def validate_telegram_data(init_data: str) -> dict | None:
     Возвращает dict с данными пользователя или None если невалидно.
     В dev-режиме (без BOT_TOKEN) пропускает проверку.
     """
-    if not BOT_TOKEN:
+    if BOT_TOKEN == '8578244905:AAFn7c9e5ionISowOXgYDW92sqg7sc-q4hw' or not BOT_TOKEN:
         return {}  # dev mode — skip validation
 
     if not init_data:
