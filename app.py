@@ -95,13 +95,25 @@ def get_worksheet_map(spreadsheet):
     return {ws.title: ws for ws in spreadsheet.worksheets()}
 
 
-def get_or_create_sheet(spreadsheet, ws_map, title, headers):
-    """Получить лист из ws_map или создать с заголовками."""
+def get_or_create_sheet(spreadsheet, ws_map, title, headers, check_headers=False):
+    """
+    Получить лист из ws_map или создать с заголовками.
+    check_headers=True — дополнительно проверить и проставить заголовки в
+    первой строке уже существующего листа, если их там нет (не перетирая
+    данные: если строка 1 непустая и не совпадает с заголовками, значит там
+    уже данные — тогда строка заголовков вставляется сверху, а не поверх).
+    """
     ws = ws_map.get(title)
     if ws is None:
         ws = spreadsheet.add_worksheet(title=title, rows=1000, cols=len(headers))
         ws.append_row(headers)
         ws_map[title] = ws
+    elif check_headers:
+        first_row = ws.row_values(1)
+        if not first_row:
+            ws.update([headers], range_name='A1')
+        elif first_row != headers:
+            ws.insert_row(headers, index=1)
     return ws
 
 
@@ -114,33 +126,45 @@ _TIRESOME_HEADERS = [
     'Ссылка на фото-отчёт', 'Ссылка на видео-отчёт', 'Ссылка на муд-борд',
 ]
 
+_headers_checked = False
+
 def ensure_sheets(spreadsheet, ws_map):
-    """Создать все нужные листы если их нет (по уже загруженной ws_map, без лишних запросов)."""
+    """
+    Создать все нужные листы если их нет (по уже загруженной ws_map, без лишних запросов).
+    Заголовки существующих листов проверяются и при необходимости
+    проставляются только один раз за время жизни процесса — чтобы не
+    добавлять лишние запросы к Sheets на каждый обычный запрос.
+    """
+    global _headers_checked
+    check = not _headers_checked
+
     get_or_create_sheet(spreadsheet, ws_map, SHEET_TEAMS, [
         'Дата', 'TG ID', 'TG Username', 'Имя', 'Город', 'Заведение',
         'Соцсеть заведения', 'Соцсеть капитана', 'Площадь (м²)',
         'Номер лицензии', 'Юр. лицо / ИП', 'Ссылка на лицензию',
-    ])
+    ], check_headers=check)
     get_or_create_sheet(spreadsheet, ws_map, SHEET_NOM_EXTRA, [
         'Дата', 'TG ID', 'TG Username', 'Имя', 'Номинация',
         'Данные (JSON)',
-    ])
+    ], check_headers=check)
     get_or_create_sheet(spreadsheet, ws_map, SHEET_NOM_MAIN, [
         'Дата', 'TG ID', 'TG Username', 'Имя', 'Номинация',
         'Cristalino (л)', 'Anejo (л)', 'Reposado (л)', 'Blanco (л)',
         'Коктейли (шт)', 'Ссылка на пост', 'Ссылка на видео',
         'Ссылка 1', 'Ссылка 2', 'Ссылка 3',
-    ])
+    ], check_headers=check)
     # Новый отдельный лист для заявок «Нарушители тишины» (структурированный)
-    get_or_create_sheet(spreadsheet, ws_map, SHEET_NOM_TIRESOME, _TIRESOME_HEADERS)
+    get_or_create_sheet(spreadsheet, ws_map, SHEET_NOM_TIRESOME, _TIRESOME_HEADERS, check_headers=check)
     # Листы записи заявок на участие в дополнительных номинациях
-    get_or_create_sheet(spreadsheet, ws_map, SHEET_ENROLL_TIRESOME,   _ENROLL_HEADERS)
-    get_or_create_sheet(spreadsheet, ws_map, SHEET_ENROLL_CRISTALINO, _ENROLL_HEADERS)
-    get_or_create_sheet(spreadsheet, ws_map, SHEET_ENROLL_ENLIGHTEN,  _ENROLL_HEADERS)
+    get_or_create_sheet(spreadsheet, ws_map, SHEET_ENROLL_TIRESOME,   _ENROLL_HEADERS, check_headers=check)
+    get_or_create_sheet(spreadsheet, ws_map, SHEET_ENROLL_CRISTALINO, _ENROLL_HEADERS, check_headers=check)
+    get_or_create_sheet(spreadsheet, ws_map, SHEET_ENROLL_ENLIGHTEN,  _ENROLL_HEADERS, check_headers=check)
     # Меню
     get_or_create_sheet(spreadsheet, ws_map, 'Меню', [
         'Дата', 'TG ID', 'TG Username', 'Имя', 'Ссылка на меню',
-    ])
+    ], check_headers=check)
+
+    _headers_checked = True
 
 
 # ══════════════════════════════════════════════
