@@ -526,6 +526,30 @@ body {
 }
 .nom-result-screen p { font-size: .9rem; color: var(--ink-light); line-height: 1.6; }
 
+.nom-submitted-data { margin-top: 24px; text-align: left; }
+.nom-submitted-loading { font-size: .85rem; color: var(--ink-light); text-align: center; }
+.nom-submitted-card {
+  background: var(--cream); border-radius: var(--r-md); padding: 16px 18px;
+  box-shadow: var(--shadow-card);
+}
+.nom-submitted-title {
+  font-family: var(--font-display); font-size: .9rem; font-weight: 900;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--hot);
+  margin-bottom: 10px;
+}
+.nom-submitted-row {
+  padding: 8px 0; border-top: 1px solid var(--divider);
+}
+.nom-submitted-row:first-of-type { border-top: none; }
+.nom-submitted-label {
+  display: block; font-size: .72rem; color: var(--ink-light);
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px;
+}
+.nom-submitted-value {
+  display: block; font-size: .88rem; color: var(--ink); line-height: 1.5;
+  word-break: break-word;
+}
+
 .nom-form-actions { display: flex; gap: 10px; margin-top: 28px; }
 .nom-form-actions .action-btn { flex: 0 0 auto; padding: 12px 20px; }
 .nom-form-actions .nom-submit { flex: 1; margin-top: 0; }

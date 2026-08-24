@@ -438,6 +438,103 @@ def submit_nomination():
     return jsonify({'status': 'success'}), 200
 
 
+@app.route('/api/nomination-data', methods=['GET'])
+def get_nomination_data():
+    """
+    Вернуть ранее отправленные данные пользователя по номинации —
+    читается напрямую из Google Таблицы, чтобы показать их на экране
+    «Данные отправлены».
+    """
+    tg_id  = request.args.get('tg_id', '').strip()
+    nom_id = request.args.get('nomination_id', '').strip()
+    if not tg_id or not nom_id:
+        return jsonify({'found': False}), 200
+
+    NOM_LABELS = {
+        'tiresome':   'Нарушители тишины',
+        'cristalino': 'Драйверы Cristalino',
+        'enlighten':  'Дерзкий просветитель',
+        'spirit':     'Дух бунтарей',
+        'stereo':     'Вызов стереотипам',
+    }
+    nom_label = NOM_LABELS.get(nom_id)
+    if not nom_label:
+        return jsonify({'found': False}), 200
+
+    try:
+        gc = get_sheets_client()
+        ss = gc.open_by_key(SPREADSHEET_ID)
+        ensure_sheets(ss)
+
+        row = None
+        fields = []
+
+        if nom_id == 'tiresome':
+            ws = ss.worksheet(SHEET_NOM_TIRESOME)
+            labels = ['Ссылка на фото-отчёт', 'Ссылка на видео-отчёт', 'Ссылка на муд-борд']
+            for r in reversed(ws.get_all_values()[1:]):
+                if len(r) >= 2 and r[1] == tg_id:
+                    row = r
+                    break
+            if row:
+                values = row[5:8]
+                fields = [{'label': l, 'value': v} for l, v in zip(labels, values) if v]
+
+        elif nom_id in ('cristalino', 'enlighten'):
+            ws = ss.worksheet(SHEET_NOM_EXTRA)
+            for r in reversed(ws.get_all_values()[1:]):
+                if len(r) >= 5 and r[1] == tg_id and r[4] == nom_label:
+                    row = r
+                    break
+            if row:
+                try:
+                    extra = json.loads(row[5]) if len(row) > 5 else {}
+                except Exception:
+                    extra = {}
+                LABEL_MAP = {
+                    'cristalino-vol':  'Espolón Cristalino (л)',
+                    'enlighten-link1': 'Ссылка 1 — основная публикация',
+                    'enlighten-link2': 'Ссылка 2',
+                    'enlighten-link3': 'Ссылка 3',
+                }
+                prefix = f'{nom_id}-link'
+                for k, v in extra.items():
+                    if not v:
+                        continue
+                    label = LABEL_MAP.get(k)
+                    if not label and k.startswith(prefix):
+                        label = f'Ссылка {k[len(prefix):]}'
+                    fields.append({'label': label or k, 'value': v})
+
+        elif nom_id in ('spirit', 'stereo'):
+            ws = ss.worksheet(SHEET_NOM_MAIN)
+            labels = [
+                'Espolón Cristalino (л)', 'Espolón Anejo (л)', 'Espolón Reposado (л)',
+                'Espolón Blanco (л)', 'Коктейли (шт)', 'Ссылка на пост', 'Ссылка на видео',
+                'Ссылка 1', 'Ссылка 2', 'Ссылка 3',
+            ]
+            for r in reversed(ws.get_all_values()[1:]):
+                if len(r) >= 5 and r[1] == tg_id and r[4] == nom_label:
+                    row = r
+                    break
+            if row:
+                values = row[5:15]
+                fields = [{'label': l, 'value': v} for l, v in zip(labels, values) if v]
+
+        if not row:
+            return jsonify({'found': False}), 200
+
+        return jsonify({
+            'found': True,
+            'submitted_at': row[0] if row else '',
+            'fields': fields,
+        }), 200
+
+    except Exception as e:
+        app.logger.error(f'Sheets error (nomination-data {nom_id}): {e}')
+        return jsonify({'found': False, 'error': str(e)}), 200
+
+
 @app.route('/api/upload-menu', methods=['POST'])
 def upload_menu():
     """Save menu photo submission to Google Sheets (base64 reference)."""

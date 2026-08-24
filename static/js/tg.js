@@ -345,6 +345,7 @@ window.openNomDetail = function(nomId) {
       if (confirmEl) confirmEl.style.display = 'none';
       successEl.style.display = 'block';
     }
+    loadSubmittedData(nomId);
   } else {
     showNomConfirm(nomId);
   }
@@ -419,10 +420,51 @@ window.submitNomDetail = async function(nomId) {
     setState({ ['nom_' + nomId]: 'submitted' });
     haptic('medium');
     window.scrollTo(0, 0);
+    loadSubmittedData(nomId);
 
   } catch (err) {
     showToast('Ошибка: ' + err.message, true);
     if (btn) { btn.disabled = false; btn.innerHTML = 'Отправить →'; }
+  }
+};
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[ch]));
+}
+
+// ══ Show previously submitted data, read live from the Google Sheet ══
+window.loadSubmittedData = async function(nomId) {
+  const container = document.getElementById('nomSubmittedData-' + nomId);
+  if (!container || !TG_ID) return;
+
+  container.innerHTML = '<p class="nom-submitted-loading">Загружаем данные…</p>';
+
+  try {
+    const res = await fetch('/api/nomination-data?tg_id=' + encodeURIComponent(TG_ID) + '&nomination_id=' + encodeURIComponent(nomId));
+    const data = await res.json();
+
+    if (!data.found || !Array.isArray(data.fields) || !data.fields.length) {
+      container.innerHTML = '';
+      return;
+    }
+
+    const rows = data.fields.map(f => `
+      <div class="nom-submitted-row">
+        <span class="nom-submitted-label">${escapeHtml(f.label)}</span>
+        <span class="nom-submitted-value">${escapeHtml(f.value)}</span>
+      </div>
+    `).join('');
+
+    container.innerHTML = `
+      <div class="nom-submitted-card">
+        <div class="nom-submitted-title">Ваши данные</div>
+        ${rows}
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = '';
   }
 };
 
