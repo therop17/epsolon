@@ -440,7 +440,6 @@ window.handleRegNavBtn = function() {
 // ══════════════════════════════════════
 const DATA_PERIODS = {
   spirit:     { start: new Date('2026-08-24'), end: new Date('2026-08-31') },
-  stereo:     { start: new Date('2026-08-24'), end: new Date('2026-08-31') },
   tiresome:   { start: new Date('2026-07-07'), end: new Date('2026-07-16') },
   cristalino: { start: new Date('2026-08-01'), end: new Date('2026-08-11') },
   enlighten:  { start: new Date('2026-08-24'), end: new Date('2026-08-30') },
