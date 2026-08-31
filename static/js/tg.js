@@ -481,10 +481,11 @@ window.handleRegNavBtn = function() {
 // DATE-BASED DATA ENTRY PERIODS
 // ══════════════════════════════════════
 const DATA_PERIODS = {
-  spirit:     { start: new Date('2026-08-24'), end: new Date('2026-08-31') },
+  // Продлили закрытие до 1 сентября 03:00 по Москве (было 31.08 / 30.08).
+  spirit:     { start: new Date('2026-08-24'), end: new Date('2026-09-01T03:00:00+03:00') },
   tiresome:   { start: new Date('2026-07-07'), end: new Date('2026-07-16') },
   cristalino: { start: new Date('2026-08-01'), end: new Date('2026-08-11') },
-  enlighten:  { start: new Date('2026-08-24'), end: new Date('2026-08-30') },
+  enlighten:  { start: new Date('2026-08-24'), end: new Date('2026-09-01T03:00:00+03:00') },
 };
 
 function isDataEntryPeriod(nomId) {
