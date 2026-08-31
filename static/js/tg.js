@@ -211,19 +211,25 @@ async function verifyRegistrationWithServer() {
       setState({ team_registered: true });
       if (!window.teamRegistered) applyRegisteredUI(); // in case localStorage was wrong
 
-      // Sync submitted nomination states
-      if (Array.isArray(data.nominations)) {
-        const update = {};
-        data.nominations.forEach(id => { update['nom_' + id] = 'submitted'; });
-        setState(update);
-      }
+      // Full sync of submitted nomination states — marks confirmed ones AND
+      // clears stale "submitted" flags for nominations whose row was removed
+      // from the sheet (previously this only ever added flags, never removed them).
+      const ALL_NOM_IDS = ['tiresome', 'cristalino', 'enlighten', 'spirit', 'stereo'];
+      const submittedNoms = Array.isArray(data.nominations) ? data.nominations : [];
+      const update = {};
+      ALL_NOM_IDS.forEach(id => {
+        update['nom_' + id] = submittedNoms.includes(id) ? 'submitted' : null;
+      });
+      setState(update);
 
-      // Sync enrolled states (Тишина / Драйверы / Просветитель)
-      if (Array.isArray(data.enrolled)) {
-        const enrollUpdate = {};
-        data.enrolled.forEach(id => { enrollUpdate['nom_enrolled_' + id] = true; });
-        setState(enrollUpdate);
-      }
+      // Same full sync for enrolled states (Тишина / Драйверы / Просветитель)
+      const ALL_ENROLL_IDS = ['tiresome', 'cristalino', 'enlighten'];
+      const enrolledNoms = Array.isArray(data.enrolled) ? data.enrolled : [];
+      const enrollUpdate = {};
+      ALL_ENROLL_IDS.forEach(id => {
+        enrollUpdate['nom_enrolled_' + id] = enrolledNoms.includes(id) ? true : null;
+      });
+      setState(enrollUpdate);
 
     } else if (data.registered === false) {
       // Server says NOT registered — clear stale state and revert UI
